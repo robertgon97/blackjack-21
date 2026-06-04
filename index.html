@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blackjack 21</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-tema="verde">
+  <div id="toasts"></div>
+
+  <div class="layout">
+    <!-- ====================== MESA ====================== -->
+    <div class="mesa">
+      <header>
+        <div class="header-top">
+          <span class="header-spacer"></span>
+          <h1>♠ Blackjack 21 ♥</h1>
+          <div class="header-botones">
+          <div class="dropdown" id="dd-tema">
+            <button class="dropdown-toggle" id="dd-tema-toggle" title="Tema">
+              <span id="dd-tema-icono">🟢</span>
+              <span id="dd-tema-label">Clásico</span>
+              <span class="dd-flecha">▾</span>
+            </button>
+            <ul class="dropdown-menu oculto" id="dd-tema-menu">
+              <li data-valor="verde">🟢 Clásico</li>
+              <li data-valor="azul">🔵 Noche</li>
+              <li data-valor="rojo">🔴 Rubí</li>
+              <li data-valor="oscuro">⚫ Oscuro</li>
+            </ul>
+          </div>
+          <button id="btn-tutorial" title="Tutorial">❓</button>
+          <button id="btn-ajustes" title="Ajustes / Reglas">⚙️</button>
+          <button id="btn-ambiente" title="Música de fondo">🎵</button>
+          <button id="btn-sonido" title="Sonido">🔊</button>
+          </div>
+        </div>
+
+        <div class="dinero">
+          <div class="caja">
+            <span class="etiqueta">Banca</span>
+            <span id="banca" class="valor verde">$1000</span>
+          </div>
+          <div class="caja">
+            <span class="etiqueta">Apuesta actual</span>
+            <span id="apuesta" class="valor amarillo">$0</span>
+          </div>
+          <div class="caja">
+            <span class="etiqueta">Última jugada</span>
+            <span id="resultado-dinero" class="valor">—</span>
+          </div>
+        </div>
+
+        <div class="info-mesa">
+          <div class="caja-min">Cartas en el shoe: <b id="cartas-restantes">0</b></div>
+          <div id="conteo-caja" class="caja-min oculto">
+            Conteo Hi-Lo: <b id="conteo-corrido">0</b> · Real: <b id="conteo-real">0.0</b>
+          </div>
+        </div>
+      </header>
+
+      <!-- Crupier -->
+      <section class="mano-zona">
+        <h2>Crupier <span id="puntos-crupier" class="puntos">0</span></h2>
+        <div id="cartas-crupier" class="cartas"></div>
+      </section>
+
+      <!-- Jugador -->
+      <section class="mano-zona">
+        <h2>Tú <span id="puntos-jugador" class="puntos">0</span></h2>
+        <div id="cartas-jugador" class="cartas"></div>
+      </section>
+
+      <div id="mensaje" class="mensaje">Elige tu apuesta para empezar</div>
+      <div id="consejo" class="consejo oculto"></div>
+      <div id="probabilidad" class="probabilidad oculto"></div>
+
+      <!-- Apuestas -->
+      <div id="zona-apuesta" class="controles">
+        <button class="ficha" data-valor="10"><span>$10</span></button>
+        <button class="ficha" data-valor="25"><span>$25</span></button>
+        <button class="ficha" data-valor="50"><span>$50</span></button>
+        <button class="ficha" data-valor="100"><span>$100</span></button>
+        <div class="apuesta-extra">
+          <button id="btn-repetir" class="secundario">↻ Repetir</button>
+          <button id="btn-doblar-apuesta" class="secundario">×2</button>
+          <button id="btn-limpiar" class="secundario">Limpiar</button>
+          <button id="btn-repartir" class="principal">Repartir</button>
+        </div>
+      </div>
+
+      <!-- Seguro -->
+      <div id="zona-seguro" class="controles oculto">
+        <span class="aviso-seguro">El crupier muestra un As. ¿Pagar seguro (mitad de tu apuesta)?</span>
+        <button id="btn-seguro-si" class="principal">Sí, asegurar</button>
+        <button id="btn-seguro-no" class="secundario">No</button>
+      </div>
+
+      <!-- Juego -->
+      <div id="zona-juego" class="controles oculto">
+        <button id="btn-pedir" class="principal">Pedir</button>
+        <button id="btn-plantarse" class="principal">Plantarse</button>
+        <button id="btn-doblar" class="secundario">Doblar</button>
+        <button id="btn-dividir" class="secundario">Dividir</button>
+        <button id="btn-rendirse" class="secundario">Rendirse</button>
+      </div>
+
+      <!-- Nueva ronda -->
+      <div id="zona-nueva" class="controles oculto">
+        <button id="btn-nueva" class="principal">Nueva ronda</button>
+      </div>
+
+      <!-- Préstamo -->
+      <div id="zona-prestamo" class="controles oculto">
+        <button id="btn-prestamo" class="principal">Pedir préstamo (+$500)</button>
+      </div>
+    </div>
+
+    <!-- ====================== PANEL LATERAL ====================== -->
+    <aside class="panel">
+      <div class="panel-bloque">
+        <h3>📊 Estadísticas</h3>
+        <div class="stats-grid">
+          <span>Nivel</span><b id="st-nivel">Novato</b>
+          <span>Manos</span><b id="st-jugadas">0</b>
+          <span>Ganadas</span><b id="st-ganadas">0</b>
+          <span>Perdidas</span><b id="st-perdidas">0</b>
+          <span>Empates</span><b id="st-empates">0</b>
+          <span>Blackjacks</span><b id="st-bj">0</b>
+          <span>% Victorias</span><b id="st-winrate">0%</b>
+          <span>Racha</span><b id="st-racha">0</b>
+        </div>
+        <div id="st-errores-caja" class="stats-grid oculto">
+          <span>Errores</span><b id="st-errores">0</b>
+        </div>
+      </div>
+
+      <div class="panel-bloque">
+        <h3>🕑 Historial</h3>
+        <ul id="historial-lista" class="historial"></ul>
+      </div>
+
+      <div class="panel-bloque">
+        <h3>🏆 Logros</h3>
+        <ul id="logros-lista" class="logros"></ul>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ====================== MODAL AJUSTES ====================== -->
+  <div id="modal-ajustes" class="modal oculto">
+    <div class="modal-contenido">
+      <h2>⚙️ Reglas de la mesa</h2>
+      <label>Número de barajas (shoe)
+        <input id="aj-barajas" type="number" min="1" max="8" />
+      </label>
+      <label>Pago del Blackjack
+        <select id="aj-pago">
+          <option value="1.5">3:2 (justo)</option>
+          <option value="1.2">6:5 (casa)</option>
+        </select>
+      </label>
+      <label>Apuesta mínima <input id="aj-min" type="number" min="1" /></label>
+      <label>Apuesta máxima <input id="aj-max" type="number" min="1" /></label>
+      <label class="check"><input id="aj-h17" type="checkbox" /> Crupier pide en 17 suave (H17)</label>
+      <label class="check"><input id="aj-empuje22" type="checkbox" /> Empuje en 22 (variante)</label>
+      <label class="check"><input id="aj-rendirse" type="checkbox" /> Permitir rendirse</label>
+      <label class="check"><input id="aj-entrenamiento" type="checkbox" /> Modo entrenamiento (avisa errores)</label>
+      <label class="check"><input id="aj-conteo" type="checkbox" /> Mostrar conteo Hi-Lo</label>
+      <label class="check"><input id="aj-probabilidad" type="checkbox" /> Mostrar probabilidad de pasarse</label>
+      <div class="modal-botones">
+        <button id="btn-guardar-ajustes" class="principal">Guardar</button>
+        <button id="btn-cerrar-ajustes" class="secundario">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== MODAL TUTORIAL ====================== -->
+  <div id="modal-tutorial" class="modal oculto">
+    <div class="modal-contenido">
+      <h2>📚 Cómo jugar</h2>
+      <p id="tutorial-texto" class="tutorial-texto"></p>
+      <div class="tutorial-pie">
+        <span id="tutorial-progreso">1 / 8</span>
+        <div class="modal-botones">
+          <button id="btn-tutorial-ant" class="secundario">Anterior</button>
+          <button id="btn-tutorial-sig" class="principal">Siguiente</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== MÓDULOS (orden importa) ====================== -->
+  <script src="js/config.js"></script>
+  <script src="js/cartas.js"></script>
+  <script src="js/estrategia.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/juego.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
