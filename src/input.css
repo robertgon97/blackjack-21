@@ -1,0 +1,349 @@
+/* ====================== TAILWIND ====================== */
+/* Las utilidades de Tailwind se inyectan aquí en el build (npm run build:css).
+   El "preflight" está desactivado en tailwind.config.js: el reset de abajo y los
+   temas con variables son la base. NO edites styles.css (es el OUTPUT generado);
+   edita ESTE archivo (src/input.css) y recompila. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ====================== RESET ====================== */
+/* Base de bordes para que las utilidades border-* de Tailwind funcionen con el
+   preflight desactivado (replica solo esa parte del preflight de Tailwind). */
+*, ::before, ::after { border-width: 0; border-style: solid; border-color: currentColor; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ====================== TEMAS ====================== */
+body {
+  --tapete1: #0b6b3a;
+  --tapete2: #064023;
+  --texto: #ffffff;
+  --caja-bg: rgba(0, 0, 0, 0.3);
+  --acento: #ffd166;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--texto);
+  min-height: 100vh;
+  /* Tapete del tema + textura de fieltro (dos capas de puntitos: luz y sombra) */
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1.6px) 0 0 / 7px 7px,
+    radial-gradient(rgba(0, 0, 0, 0.10) 1px, transparent 1.6px) 3px 3px / 9px 9px,
+    radial-gradient(circle at center, var(--tapete1) 0%, var(--tapete2) 100%);
+  padding: 16px;
+}
+body[data-tema="azul"] { --tapete1: #1e3c72; --tapete2: #0a1530; --acento: #4ecdc4; }
+body[data-tema="rojo"] { --tapete1: #8e1d1d; --tapete2: #3a0808; --acento: #ffd166; }
+body[data-tema="oscuro"] { --tapete1: #2c2c34; --tapete2: #0e0e12; --acento: #f1c40f; }
+
+/* ====================== LAYOUT ====================== */
+.layout {
+  display: flex;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+.mesa { flex: 1; min-width: 0; position: relative; }
+/* Línea curva dorada tipo mesa de Blackjack, detrás del contenido (z-index:-1).
+   Tamaño acotado para no desbordar a los lados; SIN overflow:hidden para no afectar
+   al desplegable de tema ni a la ficha que vuela (ambos delicados, ver CLAUDE.md). */
+.mesa::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: -34%;
+  transform: translateX(-50%);
+  width: min(640px, 92%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 215, 0, 0.18);
+  pointer-events: none;
+}
+.panel { width: 250px; flex-shrink: 0; }
+
+/* ====================== HEADER ====================== */
+header { text-align: center; margin-bottom: 16px; }
+h1 { font-size: 1.8rem; margin: 0; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); white-space: nowrap; }
+
+/* Fila superior: espaciador | título centrado | botones a la derecha.
+   El espaciador y los botones ocupan 1fr cada uno → el título queda centrado
+   y los botones nunca se solapan con el título. */
+.header-top {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.header-spacer { flex: 1; }
+.header-botones {
+  flex: 1; display: flex; gap: 6px; align-items: center; justify-content: flex-end;
+}
+.header-botones > button {
+  background: rgba(0, 0, 0, 0.3); color: #fff; border: none;
+  border-radius: 8px; width: 38px; height: 38px; font-size: 1rem; cursor: pointer;
+  padding: 0; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* ---------- DESPLEGABLE PERSONALIZADO (tema) ---------- */
+.dropdown { position: relative; }
+.dropdown-toggle {
+  background: rgba(0, 0, 0, 0.3); color: #fff; border: none; border-radius: 8px;
+  height: 38px; padding: 0 12px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.dropdown-toggle:hover { background: rgba(0, 0, 0, 0.45); }
+.dropdown-toggle .dd-flecha { font-size: 0.75rem; opacity: 0.8; transition: transform 0.2s; }
+.dropdown.abierto .dd-flecha { transform: rotate(180deg); }
+
+.dropdown-menu {
+  position: absolute; top: 46px; right: 0; min-width: 160px; z-index: 60;
+  list-style: none; padding: 5px; margin: 0;
+  background: #15241c; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  animation: menuAparecer 0.16s ease;
+}
+body[data-tema="azul"] .dropdown-menu { background: #12203c; }
+body[data-tema="rojo"] .dropdown-menu { background: #281010; }
+body[data-tema="oscuro"] .dropdown-menu { background: #18181f; }
+
+.dropdown-menu li {
+  padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+  display: flex; align-items: center; gap: 8px; transition: background 0.12s;
+}
+.dropdown-menu li:hover { background: rgba(255, 255, 255, 0.1); }
+.dropdown-menu li.activo { background: var(--acento); color: #1a1a1a; font-weight: 700; }
+
+@keyframes menuAparecer {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.header-botones button.activo { background: var(--acento); color: #222; }
+
+.dinero { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.caja {
+  background: var(--caja-bg); border-radius: 12px; padding: 10px 18px;
+  min-width: 140px; display: flex; flex-direction: column; align-items: center;
+}
+.etiqueta { font-size: 0.72rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
+.valor { font-size: 1.4rem; font-weight: bold; }
+.verde { color: #7bed9f; }
+.amarillo { color: #ffd166; }
+.rojo { color: #ff6b6b; }
+
+.info-mesa { display: flex; gap: 12px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.caja-min { background: var(--caja-bg); border-radius: 8px; padding: 4px 12px; font-size: 0.8rem; }
+/* Zapato (shoe) con su iconito de cargador inclinado */
+.caja-shoe { display: flex; align-items: center; gap: 8px; }
+.icono-shoe { width: 30px; height: 18px; flex-shrink: 0; overflow: visible; }
+
+/* ====================== CARTAS ====================== */
+.mano-zona { margin: 16px 0; min-height: 130px; }
+.mano-zona h2 { font-size: 1.05rem; margin-bottom: 8px; opacity: 0.92; }
+.puntos { background: rgba(0, 0, 0, 0.4); padding: 2px 10px; border-radius: 20px; font-size: 0.9rem; margin-left: 6px; }
+
+.cartas { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+#cartas-jugador { gap: 20px; }
+
+.mano-grupo {
+  display: flex; flex-direction: column; gap: 8px; padding: 8px;
+  border-radius: 12px; border: 2px solid transparent; transition: border-color 0.2s, background 0.2s;
+}
+.mano-grupo.activa { border-color: var(--acento); background: rgba(255, 209, 102, 0.12); }
+.fila-mano { display: flex; gap: 10px; flex-wrap: wrap; }
+.info-mano { font-size: 0.85rem; text-align: center; opacity: 0.9; }
+
+.carta {
+  position: relative; width: 80px; height: 112px; background: #fff; border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); color: #222; animation: aparecer 0.3s ease;
+}
+.carta .idx {
+  position: absolute; font-size: 0.85rem; font-weight: bold; line-height: 0.95; text-align: center;
+}
+.carta .idx.tl { top: 6px; left: 7px; }
+.carta .idx.br { bottom: 6px; right: 7px; transform: rotate(180deg); }
+.carta .suit-centro {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.4rem;
+}
+.carta .roja { color: #d63031; }
+
+@keyframes aparecer {
+  from { transform: translateY(-20px) scale(0.85); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Carta con volteo 3D (la oculta del crupier) */
+.carta-flip { width: 80px; height: 112px; perspective: 600px; animation: aparecer 0.3s ease; }
+.carta-inner {
+  position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d;
+}
+.carta-flip.revelada .carta-inner { transform: rotateY(180deg); }
+.carta-inner .cara {
+  position: absolute; width: 100%; height: 100%; border-radius: 10px;
+  backface-visibility: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  animation: none; /* evita que la animación de entrada pise el rotateY y haga parpadear la carta */
+}
+.carta-inner .dorso {
+  background: repeating-linear-gradient(45deg, #2d3436, #2d3436 8px, #636e72 8px, #636e72 16px);
+}
+.carta-inner .frente { background: #fff; transform: rotateY(180deg); }
+
+/* ====================== MENSAJES / AYUDAS ====================== */
+.mensaje { text-align: center; font-size: 1.15rem; margin: 14px 0 6px; min-height: 26px; font-weight: 500; }
+.consejo { text-align: center; font-size: 0.95rem; color: var(--acento); margin-bottom: 4px; }
+.probabilidad { text-align: center; font-size: 0.85rem; opacity: 0.85; margin-bottom: 10px; }
+
+/* ====================== CONTROLES ====================== */
+.controles { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; align-items: center; }
+.oculto { display: none !important; }
+
+button {
+  cursor: pointer; border: none; border-radius: 10px; padding: 12px 18px;
+  font-size: 1rem; font-weight: bold; transition: transform 0.1s, filter 0.1s;
+}
+button:hover { filter: brightness(1.1); }
+button:active { transform: scale(0.96); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Relieve inferior tipo tecla de videojuego: se "hunde" al pulsar */
+.principal, .secundario { border-bottom: 4px solid rgba(0, 0, 0, 0.28); }
+.principal:active, .secundario:active { transform: translateY(2px); border-bottom-width: 2px; }
+.principal { background: var(--acento); color: #222; }
+.secundario { background: #576574; color: #fff; }
+
+.disponible {
+  background: #1abc9c; color: #fff;
+  box-shadow: 0 0 14px 3px rgba(26, 188, 156, 0.7);
+  animation: pulso 1.1s ease-in-out infinite;
+}
+@keyframes pulso { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+.apuesta-extra { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; margin-top: 6px; }
+.aviso-seguro { width: 100%; text-align: center; font-size: 0.95rem; color: var(--acento); margin-bottom: 8px; }
+
+/* ====================== FICHAS ====================== */
+.ficha {
+  position: relative; width: 66px; height: 66px; border-radius: 50%; border: none; padding: 0;
+  color: #fff; font-size: 0.92rem; font-weight: 800; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(circle, var(--base) 0 58%, rgba(255, 255, 255, 0.85) 58% 62%, var(--base) 62% 70%, transparent 70%),
+    repeating-conic-gradient(var(--raya) 0 12deg, var(--base) 12deg 30deg);
+  /* Relieve de arcilla de casino: luz arriba, sombra abajo y sombra proyectada */
+  box-shadow:
+    inset 0 3px 5px rgba(255, 255, 255, 0.35),
+    inset 0 -5px 7px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.18),
+    0 6px 12px rgba(0, 0, 0, 0.45);
+}
+/* Anillo interior punteado (segundo aro de la ficha) */
+.ficha::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.30);
+  pointer-events: none;
+}
+.ficha span { position: relative; z-index: 1; }
+.ficha[data-valor="10"]  { --base: #2980b9; --raya: #ecf0f1; }
+.ficha[data-valor="25"]  { --base: #27ae60; --raya: #ecf0f1; }
+.ficha[data-valor="50"]  { --base: #e67e22; --raya: #2c3e50; }
+.ficha[data-valor="100"] { --base: #2c3e50; --raya: #f1c40f; }
+.ficha:hover {
+  transform: translateY(-6px) scale(1.06);
+  box-shadow:
+    inset 0 3px 5px rgba(255, 255, 255, 0.35),
+    inset 0 -5px 7px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.18),
+    0 12px 20px rgba(0, 0, 0, 0.5);
+}
+.ficha:active { transform: scale(0.96); }
+
+/* Ficha que vuela hacia la apuesta */
+.ficha-volando {
+  position: fixed; width: 32px; height: 32px; border-radius: 50%; z-index: 1000; pointer-events: none;
+  background: radial-gradient(circle, #e67e22 0 60%, #fff 60% 70%, #e67e22 70%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); transition: transform 0.5s ease-in, opacity 0.5s ease-in;
+}
+
+/* ====================== PANEL LATERAL ====================== */
+.panel-bloque { background: var(--caja-bg); border-radius: 12px; padding: 14px; margin-bottom: 14px; overflow: hidden; }
+/* Cabecera con moldura sangrada a los bordes del bloque y punto dorado pulsante */
+.panel-bloque h3 {
+  font-size: 0.95rem;
+  margin: -14px -14px 12px;
+  padding: 9px 14px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0.08));
+  border-bottom: 2px solid rgba(255, 215, 0, 0.28);
+  display: flex; align-items: center; gap: 6px;
+}
+.panel-bloque h3::after {
+  content: "";
+  width: 6px; height: 6px; border-radius: 50%;
+  margin-left: auto;
+  background: var(--acento);
+  box-shadow: 0 0 6px var(--acento);
+  animation: pulsoPunto 1.8s ease-in-out infinite;
+}
+@keyframes pulsoPunto { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.stats-grid { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 0.85rem; }
+.stats-grid span { opacity: 0.8; }
+.stats-grid b { text-align: right; }
+.historial { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+.historial li { background: rgba(0, 0, 0, 0.25); border-radius: 6px; padding: 3px 8px; font-size: 0.8rem; font-weight: bold; }
+.logros { list-style: none; font-size: 0.82rem; display: flex; flex-direction: column; gap: 5px; }
+.logros .bloqueado { opacity: 0.45; }
+
+/* ====================== MODALES ====================== */
+.modal {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 16px;
+}
+.modal-contenido {
+  background: #1b2a22; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px;
+  padding: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
+}
+body[data-tema="oscuro"] .modal-contenido { background: #1a1a20; }
+body[data-tema="azul"] .modal-contenido { background: #14213d; }
+body[data-tema="rojo"] .modal-contenido { background: #2a1010; }
+.modal-contenido h2 { margin-bottom: 16px; font-size: 1.3rem; }
+.modal-contenido label { display: block; margin-bottom: 12px; font-size: 0.9rem; }
+.modal-contenido label.check { display: flex; align-items: center; gap: 8px; }
+.modal-contenido input, .modal-contenido select {
+  width: 100%; margin-top: 4px; padding: 8px; border-radius: 8px; border: none; font-size: 0.95rem;
+}
+.modal-contenido label.check input { width: auto; margin-top: 0; }
+.modal-botones { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.tutorial-texto { font-size: 1.05rem; line-height: 1.5; min-height: 80px; }
+.tutorial-pie { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 12px; }
+#tutorial-progreso { opacity: 0.7; font-size: 0.85rem; }
+
+/* ====================== TOASTS ====================== */
+#toasts { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 3000;
+  display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast {
+  background: #2c3e50; color: #fff; padding: 10px 18px; border-radius: 10px;
+  font-size: 0.9rem; font-weight: 500; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  opacity: 0; transform: translateY(-12px); transition: opacity 0.3s, transform 0.3s;
+}
+.toast.visible { opacity: 1; transform: translateY(0); }
+.toast.logro { background: #b8860b; }
+.toast.aviso { background: #c0392b; }
+.toast.info { background: #2980b9; }
+
+/* ====================== RESPONSIVE (móvil) ====================== */
+@media (max-width: 860px) {
+  .layout { flex-direction: column; }
+  .panel { width: 100%; display: flex; gap: 12px; flex-wrap: wrap; }
+  .panel-bloque { flex: 1; min-width: 200px; }
+  .header-top { flex-wrap: wrap; justify-content: center; }
+  .header-spacer { display: none; }
+  .header-botones { flex: 1 1 100%; justify-content: center; margin-top: 6px; }
+  h1 { font-size: 1.5rem; }
+}
+@media (max-width: 520px) {
+  .carta, .carta-flip { width: 64px; height: 90px; }
+  .carta .suit-centro { font-size: 1.9rem; }
+  .ficha { width: 56px; height: 56px; font-size: 0.8rem; }
+  .ficha::after { inset: 10px; }
+  button { padding: 10px 14px; font-size: 0.9rem; }
+  .dinero .caja { min-width: 100px; padding: 8px 12px; }
+}

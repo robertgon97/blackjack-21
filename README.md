@@ -1,6 +1,6 @@
 # ♠ Blackjack 21 ♥
 
-Un juego de Blackjack (21) completo hecho con **HTML, CSS y JavaScript puro** (sin frameworks ni dependencias). Pensado para jugar y para aprender, con el dinero siempre a la vista.
+Un juego de Blackjack (21) completo hecho con **HTML y JavaScript puro** (sin frameworks de JS), con estilos en **Tailwind CSS + CSS propio**. Pensado para jugar y para aprender, con el dinero siempre a la vista.
 
 ## ✨ Características
 
@@ -31,20 +31,28 @@ Un juego de Blackjack (21) completo hecho con **HTML, CSS y JavaScript puro** (s
 
 ## 🚀 Cómo jugar
 
-Abre `index.html` en el navegador. Para evitar problemas con rutas locales, lo más cómodo es servirlo:
-
 ```bash
-# Python
+# 1) Instalar dependencias y compilar el CSS (Tailwind)
+npm install
+npm run build:css
+
+# 2) Servir el juego
 python -m http.server 8000
 # luego abre http://localhost:8000
 ```
+
+> Los estilos se editan en `src/input.css` y se compilan a `styles.css` con `npm run build:css` (o `npm run watch:css` para recompilar al guardar). **No edites `styles.css` a mano:** es la salida del build.
 
 ## 🧱 Estructura
 
 ```
 blackjack/
 ├── index.html
-├── styles.css
+├── styles.css          # GENERADO por el build (no editar a mano)
+├── src/
+│   └── input.css       # CSS fuente (Tailwind + estilos propios) — edita aquí
+├── tailwind.config.js
+├── package.json
 ├── js/
 │   ├── config.js      # reglas configurables
 │   ├── cartas.js      # mazo, puntos, conteo, probabilidades

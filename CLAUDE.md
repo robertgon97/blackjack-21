@@ -4,22 +4,32 @@ Contexto para asistentes de IA (y para el autor) que trabajen en este repo. Lée
 
 ## Qué es
 
-Juego de Blackjack (21) completo en **HTML + CSS + JavaScript puro (ES vanilla)**.
-- **Sin frameworks, sin bundler, sin dependencias de runtime.** Se ejecuta abriendo `index.html` (idealmente servido por HTTP, ver abajo).
-- **Sin paso de build.** Lo que editas es lo que corre.
-- Node solo se usa para correr los **tests** (DOM simulado), nunca para servir el juego.
+Juego de Blackjack (21) completo en **HTML + JavaScript puro (ES vanilla)** con estilos en **Tailwind CSS (build) + CSS propio**.
+- **JS sin frameworks ni dependencias de runtime.** El juego corre abriendo `index.html` (idealmente servido por HTTP, ver abajo); el `styles.css` que carga es estático.
+- **El CSS sí tiene paso de build:** se edita en `src/input.css` (Tailwind + CSS propio) y se compila a `styles.css` con `npm run build:css`. **`styles.css` es generado — NO lo edites a mano.**
+- Tailwind se usa de forma **híbrida**: utilidades para UI nueva (enlazadas a los temas, ver abajo) y CSS propio para los componentes complejos (cartas, fichas, dropdown, tapete). Migración gradual.
+- Node se usa para los **tests** (DOM simulado) y para **compilar el CSS**, nunca para servir el juego.
 - Idioma del código, comentarios y UI: **español** (con acentos correctos).
 
 ## Cómo ejecutar y verificar
 
 ```bash
-# Servir el juego (recomendado sobre abrir file:// por temas de rutas)
+# 1) Instalar dependencias de dev (solo la 1ª vez): Tailwind
+npm install
+
+# 2) Compilar el CSS (genera styles.css desde src/input.css)
+npm run build:css           # una vez
+npm run watch:css           # …o recompila al guardar (modo desarrollo)
+
+# 3) Servir el juego (recomendado sobre abrir file:// por temas de rutas)
 python -m http.server 8765
 # luego abrir http://localhost:8765
 
-# Correr los tests (desde la carpeta blackjack/)
-node tests/test.js          # 35 asserts de lógica
+# Correr los tests
+npm test                    # = node tests/test.js (35 asserts de lógica)
 ```
+
+**Importante:** si tocas estilos, edita **`src/input.css`** y recompila; nunca edites `styles.css` (es la salida del build y se sobreescribe en cada compilación).
 
 Nota: la extensión "Claude in Chrome" NO puede navegar a `file://` (le antepone `https://`). Para inspeccionar en el navegador, **levantar el servidor Python** y navegar a `http://localhost:8765`. Acordarse de cerrar el servidor al terminar.
 
@@ -50,6 +60,16 @@ config.js → cartas.js → estrategia.js → audio.js → stats.js → ui.js �
 | `ui.js` | TODO lo que pinta: `$()` helper, render de cartas (incl. volteo 3D), `construirGruposJugador`, `animarFichaVolando`, `aplicarTema`, paneles, `toast`. Mantiene `filasJugador`/`infosJugador` (refs a las manos en pantalla). | Sí |
 | `juego.js` | Estado y flujo principal. Reparto, turnos, reglas, dinero, resolución, integración de stats/conteo/estrategia. | Sí (vía `$` y helpers de ui) |
 | `main.js` | Cablea los botones del HTML con las funciones, panel de Ajustes, tutorial, desplegable de tema. Llama a `iniciarJuego()` al final. | Sí |
+
+## Estilos: Tailwind CSS + CSS propio (pipeline de build)
+
+- **Fuente:** `src/input.css` = directivas `@tailwind base/components/utilities` + el CSS propio del proyecto (temas, cartas, fichas, paneles, etc.).
+- **Salida:** `styles.css` (lo que enlaza `index.html`). **Generado por `npm run build:css`; no editar a mano.**
+- **Config:** `tailwind.config.js`.
+  - `content`: `index.html` + `js/**/*.js` (de ahí saca las clases usadas para no generar CSS de más).
+  - `corePlugins.preflight: false`: el reset agresivo de Tailwind está **desactivado** a propósito (el proyecto ya tiene su propio reset y 4 temas; con preflight, Tailwind pisaría botones, listas, títulos e inputs ya estilizados). Por eso `src/input.css` incluye una **mini-base de bordes** (`*,::before,::after { border-width:0; border-style:solid }`) que replica solo la parte del preflight necesaria para que las utilidades `border-*` funcionen.
+  - `theme.extend.colors`: colores **enlazados a las variables de tema** (`acento: var(--acento)`, etc.). Así `bg-acento`/`text-acento`/`border-acento` **cambian solos con el tema** (verde/azul/rojo/oscuro). Úsalos en vez de colores fijos (`bg-amber-400`) cuando quieras que respeten el tema.
+- **Filosofía híbrida:** utilidades Tailwind para UI nueva; CSS propio para componentes complejos (volteo 3D de cartas, fichas con conic-gradient, dropdown, curva del tapete). No hace falta migrar todo; conviven.
 
 ## Estado del juego (vive en `juego.js`)
 
@@ -146,6 +166,9 @@ Si agregas lógica nueva, **añade su test** en el bloque `this.__run` de `tests
 4. **El botón "disponible" (brillo verde)** en Doblar/Dividir indica que la jugada es **legal**, no que sea óptima. Puede competir visualmente con el consejo de estrategia (pendiente de pulir, ver abajo).
 5. **Scripts clásicos:** no usar `import/export` ni `type="module"`; rompería el `file://` y el modelo de scope compartido. No duplicar nombres globales entre archivos.
 6. **Navegador:** la extensión no abre `file://`; servir con `python -m http.server` para inspeccionar.
+7. **`styles.css` es generado:** edita `src/input.css` y corre `npm run build:css`. Si editas `styles.css` directo, el siguiente build borra tu cambio.
+8. **Tailwind sin preflight + `button {border:none}`:** como el preflight está desactivado y el CSS propio tiene `button { border: none }`, para poner un borde con utilidades hay que ser explícito: `border-0 border-b-4 border-solid border-<color>` (si no, el `border:none` propio gana y no se ve). Ejemplo: los 4 botones de `.apuesta-extra` en `index.html`.
+9. **Colores con tema:** para que una utilidad Tailwind respete los temas, usa los colores mapeados a variables (`bg-acento`, etc.), no los fijos (`bg-amber-400` se queda igual en todos los temas). Ver `tailwind.config.js`.
 
 ## Git / despliegue
 
@@ -162,8 +185,10 @@ Si agregas lógica nueva, **añade su test** en el bloque `this.__run` de `tests
 
 ## Despliegue web (GitHub Pages) + CI
 
-- **GitHub Pages** sirve la rama `main` (carpeta raíz) en `https://robertgon97.github.io/blackjack-21/`. Cada push a `main` redespliega solo.
-- **CI** (`.github/workflows/tests.yml`): en cada push/PR a `main` valida sintaxis JS y corre `node tests/test.js`. Si falla, el commit queda en rojo.
+- **Deploy con build** (`.github/workflows/deploy.yml`): en cada push a `main`, GitHub Actions instala deps, **compila el CSS** (`npm run build:css:min`) y publica el sitio en `https://robertgon97.github.io/blackjack-21/`. Así el `styles.css` servido siempre está recién compilado.
+  - **Paso manual (1 sola vez):** en el repo, **Settings → Pages → Source → "GitHub Actions"** (en vez de "Deploy from a branch"). Hasta hacerlo, el job de deploy fallará.
+- **CI de tests** (`.github/workflows/tests.yml`): en cada push/PR a `main` valida sintaxis JS y corre los tests. Si falla, el commit queda en rojo.
+- `styles.css` se commitea igualmente (respaldo por si Pages estuviera en modo "branch"). Recompílalo antes de pushear si cambiaste estilos: `npm run build:css`.
 - Subir archivos de workflow requiere que el token de `gh` tenga el scope **`workflow`** (`gh auth refresh -h github.com -s workflow`).
 
 ## Pendiente / ideas no implementadas
@@ -178,3 +203,4 @@ Si agregas lógica nueva, **añade su test** en el bloque `this.__run` de `tests
 - Comentarios y nombres en español, con acentos correctos.
 - Funciones globales (scope compartido); no introducir módulos/namespaces sin migrar todo.
 - Mantener la separación: `cartas/estrategia/stats/audio` NO tocan el DOM; `ui` pinta; `juego` orquesta; `main` cablea.
+- **Estilos:** editar `src/input.css` (nunca `styles.css`) y recompilar con `npm run build:css`. Para colores que respeten los temas, usar las utilidades mapeadas (`bg-acento`, etc.).

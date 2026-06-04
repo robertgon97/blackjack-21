@@ -1,0 +1,30 @@
+{
+  "name": "blackjack",
+  "version": "1.0.0",
+  "description": "Un juego de Blackjack (21) completo hecho con **HTML, CSS y JavaScript puro** (sin frameworks ni dependencias). Pensado para jugar y para aprender, con el dinero siempre a la vista.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "build:css": "tailwindcss -i src/input.css -o styles.css",
+    "watch:css": "tailwindcss -i src/input.css -o styles.css --watch",
+    "build:css:min": "tailwindcss -i src/input.css -o styles.css --minify",
+    "test": "node tests/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/robertgon97/blackjack-21.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/robertgon97/blackjack-21/issues"
+  },
+  "homepage": "https://github.com/robertgon97/blackjack-21#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}

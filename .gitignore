@@ -14,3 +14,9 @@ desktop.ini
 # Logs y temporales
 *.log
 tmp/
+
+# Salida del build de Pages (se genera en CI)
+_site/
+
+# Config local de Claude Code (preview, sesiones)
+.claude/

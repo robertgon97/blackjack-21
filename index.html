@@ -80,7 +80,14 @@
         </div>
 
         <div class="info-mesa">
-          <div class="caja-min">Cartas en el shoe: <b id="cartas-restantes">0</b></div>
+          <div class="caja-min caja-shoe">
+          <svg class="icono-shoe" viewBox="0 0 100 60" aria-hidden="true">
+            <path d="M8 50 L78 50 L92 16 L34 16 Z" fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+            <path d="M78 50 L96 50 L92 34 L78 34 Z" fill="rgba(0,0,0,0.6)"/>
+            <rect x="30" y="10" width="40" height="26" rx="3" transform="rotate(-15 30 10)" fill="#f5f6fa" stroke="rgba(0,0,0,0.3)" stroke-width="1"/>
+          </svg>
+          <span>Cartas en el shoe: <b id="cartas-restantes">0</b></span>
+        </div>
           <div id="conteo-caja" class="caja-min oculto">
             Conteo Hi-Lo: <b id="conteo-corrido">0</b> · Real: <b id="conteo-real">0.0</b>
           </div>
@@ -109,11 +116,15 @@
         <button class="ficha" data-valor="25"><span>$25</span></button>
         <button class="ficha" data-valor="50"><span>$50</span></button>
         <button class="ficha" data-valor="100"><span>$100</span></button>
+        <!-- DEMO Tailwind: estos 4 botones usan clases utilitarias de Tailwind con
+             relieve (border-b-4 que se hunde al pulsar). "Repartir" usa `bg-acento`,
+             enlazado a la variable de tema, así que cambia de color con cada tema.
+             Conservan sus IDs para que el JS los siga cableando. -->
         <div class="apuesta-extra">
-          <button id="btn-repetir" class="secundario">↻ Repetir</button>
-          <button id="btn-doblar-apuesta" class="secundario">×2</button>
-          <button id="btn-limpiar" class="secundario">Limpiar</button>
-          <button id="btn-repartir" class="principal">Repartir</button>
+          <button id="btn-repetir" class="px-5 py-2.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-white font-bold text-sm border-0 border-b-4 border-solid border-slate-800 transition-all duration-150 select-none active:border-b-0 active:translate-y-1">↻ Repetir</button>
+          <button id="btn-doblar-apuesta" class="px-5 py-2.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-white font-bold text-sm border-0 border-b-4 border-solid border-slate-800 transition-all duration-150 select-none active:border-b-0 active:translate-y-1">×2</button>
+          <button id="btn-limpiar" class="px-5 py-2.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-white font-bold text-sm border-0 border-b-4 border-solid border-slate-800 transition-all duration-150 select-none active:border-b-0 active:translate-y-1">Limpiar</button>
+          <button id="btn-repartir" class="px-7 py-2.5 rounded-lg bg-acento hover:brightness-110 text-neutral-900 font-extrabold text-sm border-0 border-b-4 border-solid border-black/30 transition-all duration-150 select-none active:border-b-0 active:translate-y-1">Repartir</button>
         </div>
       </div>
 
