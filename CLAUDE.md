@@ -153,6 +153,19 @@ Si agregas lógica nueva, **añade su test** en el bloque `this.__run` de `tests
 - Subido vía **HTTPS** con credencial de `gh` (hay 2 cuentas de GitHub; la activa quedó en `robertgon97`). Si falla el push por auth: `gh auth switch --user robertgon97`.
 - Flujo: `git add . && git commit -m "..." && git push`.
 
+## SEO / compartir en redes
+
+- `index.html` tiene meta tags **Open Graph + Twitter Card + descripción + canonical + theme-color**.
+- `favicon.svg`: ícono (♠ sobre verde).
+- `og-image.png` (1200×630): imagen de preview al compartir. Se generó dibujándola en un `<canvas>` (sin dependencias). Si necesitas regenerarla, el método fue: dibujar en canvas vía JS en el navegador → `toDataURL('image/png')` → descargar. Mantener el ratio **1.91:1** y las URLs absolutas a `robertgon97.github.io/blackjack-21/`.
+- Las URLs de `og:image`/`canonical` son **absolutas** (las redes lo exigen). Si cambia el dominio/repo, actualizarlas.
+
+## Despliegue web (GitHub Pages) + CI
+
+- **GitHub Pages** sirve la rama `main` (carpeta raíz) en `https://robertgon97.github.io/blackjack-21/`. Cada push a `main` redespliega solo.
+- **CI** (`.github/workflows/tests.yml`): en cada push/PR a `main` valida sintaxis JS y corre `node tests/test.js`. Si falla, el commit queda en rojo.
+- Subir archivos de workflow requiere que el token de `gh` tenga el scope **`workflow`** (`gh auth refresh -h github.com -s workflow`).
+
 ## Pendiente / ideas no implementadas
 
 - **Persistencia con `localStorage`** (banca, stats, logros entre sesiones). NO implementado a propósito (se pidió dejarlo para después).
