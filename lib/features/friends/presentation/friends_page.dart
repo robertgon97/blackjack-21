@@ -557,9 +557,7 @@ class _DialogoBuscarAmigoState extends ConsumerState<_DialogoBuscarAmigo> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Solicitud enviada a ${res.displayName}'),
-        ),
+        SnackBar(content: Text('Solicitud enviada a ${res.displayName}')),
       );
     } catch (e) {
       if (!mounted) return;

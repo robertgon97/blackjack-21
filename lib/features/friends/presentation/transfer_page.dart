@@ -62,9 +62,7 @@ class _TransferPageState extends ConsumerState<TransferPage> {
                   if (n == null || n <= 0) {
                     return 'Ingresa un monto válido (entero positivo)';
                   }
-                  if (n > saldo) {
-                    return 'Saldo insuficiente';
-                  }
+                  if (n > saldo) return 'Saldo insuficiente';
                   return null;
                 },
               ),
