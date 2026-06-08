@@ -9,7 +9,7 @@ Disponible en **Android**, **Web**, **Windows** e **iOS**.
 |------|-------------|--------|
 | 0 | Andamiaje, docs y migración del repo | ✅ Completa |
 | 1 | Lógica pura (domain) + 32 tests | ✅ Completa |
-| 2 | Juego solo en Flutter (UI) | 🔲 Pendiente |
+| 2 | Juego solo en Flutter (UI, 4 temas) | ✅ Completa |
 | 3 | Auth + perfil + saldo persistente | 🔲 Pendiente |
 | 4 | Social: amigos y transferencias | 🔲 Pendiente |
 | 5 | Salas multijugador en tiempo real | 🔲 Pendiente |
@@ -44,10 +44,11 @@ flutter analyze
 
 ```
 lib/
-  main.dart · app.dart          ← entrada de la app
-  core/                         ← tema, router, widgets compartidos
+  main.dart · app.dart          ← entrada de la app (ProviderScope + tema)
+  core/theme/                   ← 4 temas (ColorScheme + ColoresTapete)
   features/
     game/domain/                ← lógica pura del blackjack (sin Firebase/UI)
+    game/presentation/          ← UI del juego solo (controlador Riverpod + widgets)
     auth/ · wallet/ · friends/
     rooms/ · comms/ · profile/
 test/                           ← tests de domain (32 asserts)
