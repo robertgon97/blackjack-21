@@ -22,6 +22,9 @@ de arquitectura y la ficha de cada feature. Si el código y un documento de `reg
   relaciones.
 - [`arquitectura/seguridad.md`](arquitectura/seguridad.md) — Reglas de Firestore y validaciones en
   Cloud Functions.
+- [`arquitectura/flutter-recursos-oficiales.md`](arquitectura/flutter-recursos-oficiales.md) —
+  Recomendaciones oficiales de Flutter: Games Toolkit, patrón FirestoreController para multijugador,
+  integración de AdMob (rewarded ads), logros, paquetes por fase.
 
 ### 💼 Reglas de negocio
 - [`reglas-negocio/reglas-del-juego.md`](reglas-negocio/reglas-del-juego.md) — Reglas del Blackjack y
