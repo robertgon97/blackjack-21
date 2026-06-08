@@ -90,10 +90,9 @@ class _TransferPageState extends ConsumerState<TransferPage> {
               Text(
                 'La transferencia es irreversible.\nMáx. 10 por hora.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.grey),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey,
+                ),
               ),
             ],
           ),
