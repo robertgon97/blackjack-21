@@ -18,8 +18,10 @@ import 'modelos.dart';
 /// Valor de la carta visible del crupier (As = 11; figuras y 10 = 10).
 int valorCarta(Carta carta) {
   if (carta.valor == 'A') return 11;
-  if (carta.valor == '10' || carta.valor == 'J' ||
-      carta.valor == 'Q' || carta.valor == 'K') {
+  if (carta.valor == '10' ||
+      carta.valor == 'J' ||
+      carta.valor == 'Q' ||
+      carta.valor == 'K') {
     return 10;
   }
   return int.parse(carta.valor);
@@ -27,7 +29,11 @@ int valorCarta(Carta carta) {
 
 /// Recomienda la jugada óptima dada la mano, la carta visible del crupier y
 /// las jugadas permitidas en ese momento.
-Jugada consejoEstrategia(List<Carta> cartas, Carta cartaCrupier, OpcionesMano opc) {
+Jugada consejoEstrategia(
+  List<Carta> cartas,
+  Carta cartaCrupier,
+  OpcionesMano opc,
+) {
   final up = valorCarta(cartaCrupier); // 2..11
   final info = infoMano(cartas);
   final total = info.total;
@@ -63,7 +69,9 @@ String _consejoPareja(String valor, int up) {
     case '10':
       return 'S'; // 10/figuras: nunca dividir
     case '9':
-      return (up == 7 || up == 10 || up == 11) ? 'S' : 'P'; // se planta vs 7,10,A
+      return (up == 7 || up == 10 || up == 11)
+          ? 'S'
+          : 'P'; // se planta vs 7,10,A
     case '8':
       return 'P'; // Ochos: siempre dividir
     case '7':
