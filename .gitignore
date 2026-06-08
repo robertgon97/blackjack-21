@@ -1,22 +1,59 @@
-# Dependencias (por si más adelante se añade Node)
-node_modules/
+# ============================
+# Flutter / Dart
+# ============================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
 
-# Archivos del sistema operativo
+# Archivos generados por code-gen (freezed, json_serializable)
+*.g.dart
+*.freezed.dart
+
+# Artefactos de build Android
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Archivos de IDs de build iOS
+**/ios/Flutter/.last_build_id
+
+# ============================
+# IDEs
+# ============================
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ============================
+# Sistema operativo
+# ============================
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Editores
-.vscode/
-.idea/
-*.swp
+# ============================
+# Node.js (legacy-web/)
+# ============================
+node_modules/
 
+# ============================
 # Logs y temporales
+# ============================
 *.log
 tmp/
+*.swp
 
-# Salida del build de Pages (se genera en CI)
-_site/
-
-# Config local de Claude Code (preview, sesiones)
+# ============================
+# Claude Code
+# ============================
 .claude/
+
+# ============================
+# CI / Pages
+# ============================
+_site/

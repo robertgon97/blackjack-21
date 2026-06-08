@@ -1,206 +1,163 @@
-# CLAUDE.md — Guía del proyecto Blackjack 21
+# CLAUDE.md — Guía del proyecto Blackjack 21 (Flutter)
 
-Contexto para asistentes de IA (y para el autor) que trabajen en este repo. Léelo antes de tocar código.
+> **Regla de oro:** antes de tocar una feature, lee su ficha en [`docs/features/`](docs/features/)
+> y las reglas de negocio en [`docs/reglas-negocio/`](docs/reglas-negocio/).
+> La carpeta [`docs/`](docs/README.md) es la **fuente de verdad** del proyecto.
 
 ## Qué es
 
-Juego de Blackjack (21) completo en **HTML + JavaScript puro (ES vanilla)** con estilos en **Tailwind CSS (build) + CSS propio**.
-- **JS sin frameworks ni dependencias de runtime.** El juego corre abriendo `index.html` (idealmente servido por HTTP, ver abajo); el `styles.css` que carga es estático.
-- **El CSS sí tiene paso de build:** se edita en `src/input.css` (Tailwind + CSS propio) y se compila a `styles.css` con `npm run build:css`. **`styles.css` es generado — NO lo edites a mano.**
-- Tailwind se usa de forma **híbrida**: utilidades para UI nueva (enlazadas a los temas, ver abajo) y CSS propio para los componentes complejos (cartas, fichas, dropdown, tapete). Migración gradual.
-- Node se usa para los **tests** (DOM simulado) y para **compilar el CSS**, nunca para servir el juego.
-- Idioma del código, comentarios y UI: **español** (con acentos correctos).
+App multiplataforma de Blackjack (21) con multijugador en tiempo real. Desarrollada en **Flutter**
+(un solo codebase para Android, Web, Windows e iOS), respaldada por **Firebase**.
+
+El juego JS original está archivado en [`legacy-web/`](legacy-web/).
 
 ## Cómo ejecutar y verificar
 
 ```bash
-# 1) Instalar dependencias de dev (solo la 1ª vez): Tailwind
-npm install
+# Instalar dependencias
+flutter pub get
 
-# 2) Compilar el CSS (genera styles.css desde src/input.css)
-npm run build:css           # una vez
-npm run watch:css           # …o recompila al guardar (modo desarrollo)
+# Correr la app
+flutter run -d chrome       # web (recomendado para desarrollo)
+flutter run -d windows      # escritorio Windows
+flutter run -d <device>     # Android o iOS
 
-# 3) Servir el juego (recomendado sobre abrir file:// por temas de rutas)
-python -m http.server 8765
-# luego abrir http://localhost:8765
+# Calidad (lo que corre el CI)
+dart format --set-exit-if-changed .
+flutter analyze --fatal-infos
+flutter test
 
-# Correr los tests
-npm test                    # = node tests/test.js (35 asserts de lógica)
+# Firebase local (cuando esté configurado en Fase 3+)
+firebase emulators:start
+
+# Build de producción
+flutter build web --release --base-href /blackjack-21/
+flutter build apk --release
 ```
 
-**Importante:** si tocas estilos, edita **`src/input.css`** y recompila; nunca edites `styles.css` (es la salida del build y se sobreescribe en cada compilación).
+## Arquitectura
 
-Nota: la extensión "Claude in Chrome" NO puede navegar a `file://` (le antepone `https://`). Para inspeccionar en el navegador, **levantar el servidor Python** y navegar a `http://localhost:8765`. Acordarse de cerrar el servidor al terminar.
-
-Verificación rápida de sintaxis tras editar JS:
-```bash
-for f in js/*.js; do node --check "$f"; done
-```
-
-## Arquitectura: módulos cargados como scripts clásicos
-
-`index.html` carga los JS con `<script>` clásicos (NO ES modules), **en este orden**, al final del `<body>`:
+### Capas (sin cruzar en dirección contraria)
 
 ```
-config.js → cartas.js → estrategia.js → audio.js → stats.js → ui.js → juego.js → main.js
+presentation  →  domain  ←  data
+(widgets,          (lógica     (Firestore,
+ Riverpod)          pura)       Firebase Auth)
 ```
 
-**Clave:** son scripts clásicos, así que comparten el **global lexical scope**. Un `const`/`let`/`function` de nivel superior en un archivo es visible en los siguientes. **El orden de carga importa** y **no debe haber nombres duplicados** entre archivos. Esto se eligió a propósito en vez de ES modules porque permite abrir el juego con `file://` sin problemas de CORS.
+La capa `domain` **nunca** importa Flutter, Firebase ni widgets.
+La capa `data` implementa las interfaces de `domain`.
 
-### Responsabilidad de cada módulo
-
-| Archivo | Qué contiene | Toca el DOM |
-|---------|--------------|:-----------:|
-| `config.js` | Objeto global `config` con todas las reglas configurables. | No |
-| `cartas.js` | Shoe (mazo múltiple), barajar, `sacarCarta`, `calcularPuntos`, `infoMano` (total + si es "suave"), `valorSplit`/`mismoValorSplit`, conteo Hi-Lo (`contar`, `conteoVerdadero`), `probabilidadPasarse`. | No |
-| `estrategia.js` | Estrategia básica óptima. `consejoEstrategia(cartas, cartaCrupier, opc)` → `"pedir"/"plantarse"/"doblar"/"dividir"/"rendirse"`. `nombreJugada()`. | No |
-| `audio.js` | Sonidos generados con Web Audio API (sin archivos). `silencio`, `tono()`, `sonidoCarta/Ficha/Ganar/...`, `alternarAmbiente()`. | No |
-| `stats.js` | `stats` (objeto), `historial` (array), niveles (`NIVELES`, `nivelActual`), logros (`LOGROS`, `logrosDesbloqueados`, `revisarLogros`). | No |
-| `ui.js` | TODO lo que pinta: `$()` helper, render de cartas (incl. volteo 3D), `construirGruposJugador`, `animarFichaVolando`, `aplicarTema`, paneles, `toast`. Mantiene `filasJugador`/`infosJugador` (refs a las manos en pantalla). | Sí |
-| `juego.js` | Estado y flujo principal. Reparto, turnos, reglas, dinero, resolución, integración de stats/conteo/estrategia. | Sí (vía `$` y helpers de ui) |
-| `main.js` | Cablea los botones del HTML con las funciones, panel de Ajustes, tutorial, desplegable de tema. Llama a `iniciarJuego()` al final. | Sí |
-
-## Estilos: Tailwind CSS + CSS propio (pipeline de build)
-
-- **Fuente:** `src/input.css` = directivas `@tailwind base/components/utilities` + el CSS propio del proyecto (temas, cartas, fichas, paneles, etc.).
-- **Salida:** `styles.css` (lo que enlaza `index.html`). **Generado por `npm run build:css`; no editar a mano.**
-- **Config:** `tailwind.config.js`.
-  - `content`: `index.html` + `js/**/*.js` (de ahí saca las clases usadas para no generar CSS de más).
-  - `corePlugins.preflight: false`: el reset agresivo de Tailwind está **desactivado** a propósito (el proyecto ya tiene su propio reset y 4 temas; con preflight, Tailwind pisaría botones, listas, títulos e inputs ya estilizados). Por eso `src/input.css` incluye una **mini-base de bordes** (`*,::before,::after { border-width:0; border-style:solid }`) que replica solo la parte del preflight necesaria para que las utilidades `border-*` funcionen.
-  - `theme.extend.colors`: colores **enlazados a las variables de tema** (`acento: var(--acento)`, etc.). Así `bg-acento`/`text-acento`/`border-acento` **cambian solos con el tema** (verde/azul/rojo/oscuro). Úsalos en vez de colores fijos (`bg-amber-400`) cuando quieras que respeten el tema.
-- **Filosofía híbrida:** utilidades Tailwind para UI nueva; CSS propio para componentes complejos (volteo 3D de cartas, fichas con conic-gradient, dropdown, curva del tapete). No hace falta migrar todo; conviven.
-
-## Estado del juego (vive en `juego.js`)
-
-```js
-banca            // dinero total del jugador
-apuesta          // apuesta base elegida antes de repartir
-ultimaApuesta    // para el botón "Repetir"
-manos            // ARRAY de manos del jugador (por los splits):
-                 //   { cartas:[], apuesta, doblada, asPartido, rendida }
-indiceMano       // qué mano se está jugando (0-based)
-manoCrupier      // cartas del crupier (array)
-rondaActiva      // ¿hay mano en curso?
-animando         // ¿se están repartiendo cartas? Bloquea clics.
-crupierOculto    // ¿la 1ª carta del crupier sigue boca abajo?
-seguro           // dinero apostado en el "seguro"
-cartaOcultaEl    // referencia al elemento volteable del crupier
-```
-
-**`manos` es siempre un array** (incluso con una sola mano). Cualquier lógica nueva debe iterar sobre `manos`, no asumir una mano única. `indiceMano` apunta a la mano activa.
-
-## Flujo de una ronda (todo asíncrono con `async/await`)
-
-El reparto es carta por carta con pausas (`esperar(ms)`) para dar suspenso. Bandera `animando` evita clics a destiempo.
+### Módulos de `lib/`
 
 ```
-repartir()
-  → (si necesita) crearShoe()
-  → descuenta apuesta de banca
-  → reparte: jugador, crupier(oculta), jugador, crupier(visible)  [una por una]
-  → ¿crupier muestra As? → ofrece seguro (zona-seguro) ; si no → iniciarTurnoJugador()
-
-tomarSeguro(bool) → iniciarTurnoJugador()
-
-iniciarTurnoJugador()
-  → si crupier tiene BJ natural → revela + finalizarRonda()
-  → si jugador tiene BJ natural → revela + finalizarRonda()  (paga 3:2)
-  → si no → jugarManoActiva()
-
-jugarManoActiva()  (se llama para cada mano, también tras split)
-  → si la mano viene de split con 1 carta, le da la 2ª
-  → si "as partido": 1 carta y auto-avanza
-  → si 21: auto-avanza
-  → si no: muestra botones, calcula consejo + probabilidad, espera input
-
-Acciones del jugador: pedirCarta / doblar / dividir / rendirse / plantarse
-  → cada una termina llamando avanzarMano()
-
-avanzarMano()
-  → si quedan manos → siguiente jugarManoActiva()
-  → si no → jugarCrupier()
-
-jugarCrupier()
-  → revela carta oculta (volteo 3D) y la cuenta para el Hi-Lo
-  → mientras debePedirCrupier() → saca carta (carta por carta)
-  → finalizarRonda()
-
-finalizarRonda()
-  → resuelve seguro, resuelve cada mano (resolverMano), mueve dinero
-  → registra stats + historial, revisa logros, muestra resultado
-  → banca<=0 → zona-prestamo ; si no → zona-nueva
+lib/
+├── main.dart               ← entrada (solo llama runApp)
+├── app.dart                ← widget raíz + MaterialApp
+├── core/
+│   ├── theme/              ← 4 temas (ThemeData con ColorScheme)
+│   ├── router/             ← go_router + deep links (/join/CODIGO)
+│   ├── widgets/            ← Toast, AppModal, LoadingButton, Avatar
+│   └── utils/              ← formateo de dinero/fechas (puro)
+└── features/
+    ├── game/
+    │   ├── domain/         ← LÓGICA PURA migrada del JS (sin Flutter ni Firebase)
+    │   │   ├── modelos.dart    Carta, Mano, ConfigJuego, ResultadoMano
+    │   │   ├── cartas.dart     calcularPuntos, infoMano, Shoe, Hi-Lo
+    │   │   ├── estrategia.dart consejoEstrategia → Jugada enum
+    │   │   └── reglas.dart     resolverMano, debePedirCrupier, opcionesActuales
+    │   ├── data/           ← GameRepository (Firestore games/{id})
+    │   └── presentation/   ← widgets del tapete, cartas, botones
+    ├── auth/               domain · data · presentation
+    ├── wallet/             domain · data · presentation  (HistorialPage)
+    ├── friends/            domain · data · presentation  (FriendsPage, TransferPage)
+    ├── rooms/              domain · data · presentation  (LobbyPage, RoomPage)
+    ├── comms/              ← chat + voz + cámara
+    │   ├── domain/
+    │   │   ├── servicio_comunicacion.dart  ← INTERFAZ (intercambiable)
+    │   │   └── modelos.dart               MensajeChat, ParticipanteMedia
+    │   ├── data/
+    │   │   ├── livekit_comunicacion.dart  ← impl. LiveKit (intercambiable)
+    │   │   └── chat_repository.dart       rooms/{id}/chat en Firestore
+    │   └── presentation/   PanelChat, RejillaVideo, ControlesMedia
+    └── profile/            domain · data · presentation
 ```
 
-## Reglas configurables (`config`)
+## Documentación viva (`docs/`)
 
-`numBarajas`, `pagoBlackjack` (1.5 = 3:2, 1.2 = 6:5), `crupierPideEn17Suave` (H17),
-`empujeEn22` (crupier 22 = empate), `apuestaMin`/`apuestaMax`, `permitirRendirse`,
-`modoEntrenamiento`, `mostrarConteo`, `mostrarProbabilidad`, `bancaInicial`.
+| Carpeta | Contenido |
+|---------|-----------|
+| `docs/plans/` | Plan maestro de fases (`00-app-multiplataforma.md`) |
+| `docs/arquitectura/` | Visión general, modelo de datos Firestore, seguridad |
+| `docs/reglas-negocio/` | Reglas del juego, créditos, salas, social |
+| `docs/features/` | Una ficha por feature (usando `_plantilla-feature.md`) |
 
-Se editan desde el panel de Ajustes (⚙️). Cambiarlas re-baraja el shoe. La resolución de manos (`resolverMano` en `juego.js`) y la regla del crupier (`debePedirCrupier`) leen `config`.
+**Al cerrar cada fase:** crear/actualizar la ficha de feature y actualizar README.md + CLAUDE.md.
 
-## Conteo Hi-Lo: cuándo se cuenta una carta
+## Estado de Firebase
 
-`contar(carta)` se llama **cuando una carta se hace visible**:
-- carta del jugador → en `darCartaJugador`
-- carta visible del crupier → en `darCartaCrupierVisible`
-- carta oculta del crupier → **al revelarla** (`revelarCrupier`), NO al repartirla
-- cartas que roba el crupier → al sacarlas
-
-Si añades nuevas formas de mostrar cartas, recuerda llamar a `contar()`.
+- Proyecto: `blackjack-21-app`
+- Región Firestore: `southamerica-east1` (São Paulo)
+- Reglas y índices: `firestore.rules` / `firestore.indexes.json` (ya desplegados)
+- Pendiente (acción manual en consola Firebase):
+  - Habilitar plan Blaze (necesario para Cloud Functions)
+  - Habilitar proveedores de Auth: Email/Password, Google, Anónimo
+  - `flutterfire configure` (genera `lib/firebase_options.dart`)
 
 ## Tests
 
-`tests/test.js` carga los módulos reales (concatenados, sin `main.js`) dentro de un **DOM simulado** en un contexto `vm` de Node, y verifica lógica pura: puntos, split, conteo, shoe, probabilidades, estrategia básica, reglas (empuje22, rendirse, H17, pago 3:2/6:5) y un reparto completo.
+```bash
+flutter test                           # corre los 32 tests de domain
+flutter test --reporter=expanded       # con detalle de cada test
+```
 
-Para **forzar cartas concretas** en un test: sobreescribir `shoe` y poner `totalShoe = shoe.length` (si no, `necesitaBarajar()` lo regenera). Orden de `pop()` en el reparto: `player1, crupierOculta, player2, crupierVisible` (la última del array sale primero). La carta visible del crupier es `manoCrupier[1]`.
+Los tests cubren solo la capa `domain` (lógica pura, sin Firebase ni widgets).
+Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 
-Si agregas lógica nueva, **añade su test** en el bloque `this.__run` de `tests/test.js`.
+## Convenciones de código
 
-## Gotchas / decisiones aprendidas (no repetir errores)
+- Comentarios, nombres y UI en **español** (con acentos correctos).
+- Doc-comments `///` en español en cada API pública de `domain/`.
+- Linter estricto: `strict-casts`, `strict-inference`, `strict-raw-types`.
+- Modelos inmutables con `copyWith()` (se añadirá `freezed` en Fase 2).
+- Providers de Riverpod: `StreamProvider` para datos Firestore en tiempo real.
+- **No duplicar lógica entre capas:** si algo está en `domain`, `presentation` lo llama.
 
-1. **Especificidad CSS:** la regla de los iconos del header es `.header-botones > button` (hijo directo) a propósito. Si usas `.header-botones button` (descendiente), pisa al botón del desplegable de tema (`.dropdown-toggle`, que está anidado) y lo aplasta a 38px.
-2. **Volteo 3D de la carta oculta:** las caras (`.carta-inner .cara`) llevan `animation: none`. La animación de entrada `aparecer` anima `transform` y pisaba el `rotateY(180deg)`, haciendo que la carta parpadeara (se veía la cara por 0.3s). No volver a ponerle animación a esas caras.
-3. **Desplegable de tema:** es un dropdown **personalizado** (no `<select>`), porque el desplegable nativo se ve feo y no es estilizable en Edge/Chrome. Vive en `index.html` (`#dd-tema`), con CSS `.dropdown*` y JS en `main.js` (`seleccionarTema`, abrir/cerrar, cerrar al clic afuera).
-4. **El botón "disponible" (brillo verde)** en Doblar/Dividir indica que la jugada es **legal**, no que sea óptima. Puede competir visualmente con el consejo de estrategia (pendiente de pulir, ver abajo).
-5. **Scripts clásicos:** no usar `import/export` ni `type="module"`; rompería el `file://` y el modelo de scope compartido. No duplicar nombres globales entre archivos.
-6. **Navegador:** la extensión no abre `file://`; servir con `python -m http.server` para inspeccionar.
-7. **`styles.css` es generado:** edita `src/input.css` y corre `npm run build:css`. Si editas `styles.css` directo, el siguiente build borra tu cambio.
-8. **Tailwind sin preflight + `button {border:none}`:** como el preflight está desactivado y el CSS propio tiene `button { border: none }`, para poner un borde con utilidades hay que ser explícito: `border-0 border-b-4 border-solid border-<color>` (si no, el `border:none` propio gana y no se ve). Ejemplo: los 4 botones de `.apuesta-extra` en `index.html`.
-9. **Colores con tema:** para que una utilidad Tailwind respete los temas, usa los colores mapeados a variables (`bg-acento`, etc.), no los fijos (`bg-amber-400` se queda igual en todos los temas). Ver `tailwind.config.js`.
+## CI/CD (GitHub Actions)
+
+| Archivo | Disparador | Qué hace |
+|---------|-----------|----------|
+| `ci.yml` | push/PR a main | format + analyze + test |
+| `deploy-web.yml` | push a main | build web → GitHub Pages |
+| `release.yml` | tag `v*` | APK Android + build iOS sin firma |
+
+> En GitHub Pages: Settings → Pages → Source → **"GitHub Actions"** (acción manual, una sola vez).
 
 ## Git / despliegue
 
-- Repo: `robertgon97/blackjack-21` (privado), rama `main`.
-- Subido vía **HTTPS** con credencial de `gh` (hay 2 cuentas de GitHub; la activa quedó en `robertgon97`). Si falla el push por auth: `gh auth switch --user robertgon97`.
-- Flujo: `git add . && git commit -m "..." && git push`.
+- Repo: `robertgon97/blackjack-21`, rama `main`
+- Auth: `gh auth switch --user robertgon97` si falla el push
+- Flujo: `git add <archivos> && git commit -m "..." && git push`
 
-## SEO / compartir en redes
+## Gotchas aprendidos
 
-- `index.html` tiene meta tags **Open Graph + Twitter Card + descripción + canonical + theme-color**.
-- `favicon.svg`: ícono (♠ sobre verde).
-- `og-image.png` (1200×630): imagen de preview al compartir. Se generó dibujándola en un `<canvas>` (sin dependencias). Si necesitas regenerarla, el método fue: dibujar en canvas vía JS en el navegador → `toDataURL('image/png')` → descargar. Mantener el ratio **1.91:1** y las URLs absolutas a `robertgon97.github.io/blackjack-21/`.
-- Las URLs de `og:image`/`canonical` son **absolutas** (las redes lo exigen). Si cambia el dominio/repo, actualizarlas.
+1. **`domain` sin Flutter:** las funciones de `cartas.dart`, `estrategia.dart` y `reglas.dart`
+   son puras (sin `import 'package:flutter/...'`). Si necesitas Flutter en ellas, estás en la
+   capa equivocada.
+2. **`resolverMano` con `esUnicaMano`:** en el JS original detectaba BJ con `manos.length === 1`
+   (estado global). En Dart es un parámetro explícito para mantener la función pura.
+3. **`probabilidadPasarse`:** recibe `List<Carta> restantes` en vez de acceder al `shoe` global.
+   `Shoe.restantes` devuelve una vista inmutable para pasarla.
+4. **`Shoe` con `Random` inyectable:** `Shoe(6, random: Random(semilla))` para tests deterministas.
+5. **Linter `require_trailing_commas`:** en listas/params de más de una línea, coma final siempre.
+6. **Comunicación en sala:** la interfaz `ServicioComunicacion` está en `comms/domain/`. Para
+   cambiar de LiveKit a otro proveedor, crear nueva clase en `comms/data/`; la UI no cambia.
 
-## Despliegue web (GitHub Pages) + CI
+## Pendiente (fases futuras)
 
-- **Deploy con build** (`.github/workflows/deploy.yml`): en cada push a `main`, GitHub Actions instala deps, **compila el CSS** (`npm run build:css:min`) y publica el sitio en `https://robertgon97.github.io/blackjack-21/`. Así el `styles.css` servido siempre está recién compilado.
-  - **Paso manual (1 sola vez):** en el repo, **Settings → Pages → Source → "GitHub Actions"** (en vez de "Deploy from a branch"). Hasta hacerlo, el job de deploy fallará.
-- **CI de tests** (`.github/workflows/tests.yml`): en cada push/PR a `main` valida sintaxis JS y corre los tests. Si falla, el commit queda en rojo.
-- `styles.css` se commitea igualmente (respaldo por si Pages estuviera en modo "branch"). Recompílalo antes de pushear si cambiaste estilos: `npm run build:css`.
-- Subir archivos de workflow requiere que el token de `gh` tenga el scope **`workflow`** (`gh auth refresh -h github.com -s workflow`).
-
-## Pendiente / ideas no implementadas
-
-- **Persistencia con `localStorage`** (banca, stats, logros entre sesiones). NO implementado a propósito (se pidió dejarlo para después).
-- **Atajos de teclado** (P/S/D/R/espacio).
-- **Modo entrenamiento:** que el brillo verde marque solo la jugada óptima (no todas las legales).
-- Otras ideas sugeridas: side bets (21+3, pares perfectos), confeti al ganar, voz del crupier (SpeechSynthesis), gráfico de la banca, PWA instalable, accesibilidad ARIA.
-
-## Convenciones
-
-- Comentarios y nombres en español, con acentos correctos.
-- Funciones globales (scope compartido); no introducir módulos/namespaces sin migrar todo.
-- Mantener la separación: `cartas/estrategia/stats/audio` NO tocan el DOM; `ui` pinta; `juego` orquesta; `main` cablea.
-- **Estilos:** editar `src/input.css` (nunca `styles.css`) y recompilar con `npm run build:css`. Para colores que respeten los temas, usar las utilidades mapeadas (`bg-acento`, etc.).
+- `lib/firebase_options.dart` (generado por `flutterfire configure`)
+- Cloud Functions en `functions/src/` (TypeScript)
+- `lib/core/router/app_router.dart` (go_router)
+- Riverpod providers por feature
+- Temas (`ThemeData`) con las 4 paletas del juego viejo
+- Fichas de `docs/features/` para cada feature al implementarla

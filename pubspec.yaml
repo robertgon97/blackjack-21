@@ -1,0 +1,28 @@
+name: blackjack_21
+description: "Blackjack 21 — app multiplataforma (Android, Web, Windows, iOS)."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+# NOTA: dependencias añadidas por fase para evitar fijar versiones que queden
+# obsoletas. Fase 1 (lógica pura + tests) solo necesita el SDK de Flutter.
+# Las siguientes se agregarán al llegar a su fase:
+#   - flutter_riverpod, go_router          (Fase 2: UI y navegación)
+#   - firebase_core, firebase_auth,
+#     cloud_firestore, cloud_functions     (Fase 3+: backend)
+#   - livekit_client                        (Fase 6: voz/cámara)
+#   - google_mobile_ads, firebase_messaging (Fase 7: monetización/push)
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

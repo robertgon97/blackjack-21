@@ -1,0 +1,104 @@
+rules_version = '2';
+
+// ============================================================
+//  Reglas de seguridad de Firestore — Blackjack 21
+//  Fuente de verdad: docs/arquitectura/seguridad.md
+//
+//  Principio: el cliente NUNCA escribe dinero (balance) ni el
+//  estado del juego (games) ni las transacciones. Eso lo hacen
+//  las Cloud Functions con el Admin SDK (que ignora estas reglas).
+//
+//  NOTA: versión inicial; se refina en la Fase 3 (auth) y la
+//  Fase 5 (salas). Por defecto, todo lo no contemplado se niega.
+// ============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function esDueno(uid) {
+      return autenticado() && request.auth.uid == uid;
+    }
+
+    // ¿El usuario actual es amigo aceptado de `uid`?
+    function esAmigoDe(uid) {
+      return autenticado() &&
+        exists(/databases/$(database)/documents/friendships/$(uid)/contacts/$(request.auth.uid));
+    }
+
+    // ¿La escritura mantiene intactos los campos que solo las Functions pueden tocar?
+    function noTocaCamposProtegidos() {
+      return request.resource.data.balance == resource.data.balance &&
+        request.resource.data.lastAdReward == resource.data.lastAdReward;
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      // Lee el dueño y sus amigos aceptados.
+      allow read: if esDueno(uid) || esAmigoDe(uid);
+
+      // La creación del perfil y el saldo inicial los hace la Function onUserCreate.
+      allow create: if false;
+
+      // El dueño actualiza su perfil, pero NO balance ni lastAdReward.
+      allow update: if esDueno(uid) && noTocaCamposProtegidos();
+
+      allow delete: if false;
+
+      // Historial de movimientos: solo lo lee el dueño; lo escriben las Functions.
+      match /transactions/{txId} {
+        allow read: if esDueno(uid);
+        allow write: if false;
+      }
+    }
+
+    // ---------- friendships ----------
+    match /friendships/{uid}/contacts/{friendUid} {
+      // El dueño gestiona su lista de contactos. La confirmación bilateral
+      // (escribir en el lado del otro) la hace una Function.
+      allow read: if esDueno(uid);
+      allow create, update, delete: if esDueno(uid);
+    }
+
+    // ---------- rooms ----------
+    match /rooms/{roomId} {
+      function esMiembro() {
+        return autenticado() &&
+          request.auth.uid in resource.data.players;
+      }
+      function esHost() {
+        return autenticado() && request.auth.uid == resource.data.hostUid;
+      }
+
+      // Salas públicas las ve cualquiera autenticado; las privadas, solo miembros.
+      allow read: if autenticado() && (resource.data.private == false || esMiembro());
+
+      // El host crea su sala.
+      allow create: if autenticado() && request.resource.data.hostUid == request.auth.uid;
+
+      // Host o jugadores actualizan la sala (refinar campos permitidos en Fase 5).
+      allow update: if esHost() || esMiembro();
+
+      allow delete: if esHost();
+
+      // Chat: lo leen y escriben los miembros; el autor debe ser uno mismo.
+      match /chat/{msgId} {
+        allow read: if autenticado() &&
+          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.players;
+        allow create: if autenticado() && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- games ----------
+    // El reparto y la resolución los hacen las Functions (anti-trampa).
+    match /games/{gameId} {
+      allow read: if autenticado() &&
+        request.auth.uid in get(/databases/$(database)/documents/games/$(gameId)).data.players;
+      allow write: if false;
+    }
+  }
+}

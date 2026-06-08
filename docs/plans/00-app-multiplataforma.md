@@ -1,0 +1,108 @@
+# Plan maestro: Blackjack 21 → App Multiplataforma (Flutter + Firebase)
+
+> Documento vivo. Refleja el plan aprobado para convertir el juego web en una app multiplataforma.
+> Las reglas de negocio detalladas viven en [`../reglas-negocio/`](../reglas-negocio/) y la
+> arquitectura en [`../arquitectura/`](../arquitectura/).
+
+## Contexto
+
+El proyecto nació como un Blackjack solo (jugador vs sistema) en HTML + JS vanilla + Tailwind,
+desplegado en GitHub Pages (conservado en [`../../legacy-web/`](../../legacy-web/)). La lógica del
+juego estaba bien encapsulada en funciones puras, lo que facilita migrarla.
+
+**Objetivo:** una **app multiplataforma** (Android APK, Web, Windows, iOS) con un solo codebase en
+**Flutter**, respaldada por **Firebase**, con: login, créditos, amigos, invitaciones por enlace,
+transferencias entre usuarios, saldo persistente, historial de movimientos, **partidas multijugador en
+tiempo real** (el sistema es el crupier) y **comunicación en la sala** (chat + emojis, voz y cámara
+opcional para ver reacciones).
+
+## Decisiones confirmadas
+
+- **Framework:** Flutter (Dart) — un solo código para Android + Web + Windows + iOS.
+- **Backend:** Firebase Blaze (Auth + Firestore + Cloud Functions + Hosting/Messaging).
+- **Turnos multijugador:** simultáneos, con temporizador de 45 s (configurable por el host).
+- **Repo:** el mismo; el juego JS original se archiva en `legacy-web/`.
+- **CI/CD:** Web (GitHub Pages), Android APK e iOS (build sin firmar).
+- **Comunicación en sala:** chat de texto + emojis, voz y cámara opcional (apagada por defecto).
+- **Voz/video:** LiveKit (open-source, nube gratis, self-hosteable), **detrás de una abstracción**
+  para poder cambiar de proveedor sin tocar la UI.
+
+## Principios de calidad (no negociables)
+
+- **Arquitectura limpia por capas:** `domain` (lógica pura) → `data` (repositorios) → `presentation`
+  (UI + estado). La lógica del juego nunca conoce Firebase ni widgets.
+- **Feature-first:** cada funcionalidad es una carpeta autónoma.
+- **Abstracción de proveedores externos** (voz/video, anuncios, push) por *interface* en `domain`.
+- **Módulos pequeños, una sola responsabilidad.** Sin duplicar lógica.
+- **Código documentado** con doc-comments `///` en español.
+- **Inmutabilidad:** modelos `freezed`.
+- **Testeable:** la capa `domain` cubierta por `flutter test`.
+- **Documentación viva en `docs/`** y README + CLAUDE.md actualizados al cerrar cada fase.
+
+## Stack
+
+| Capa | Tecnología |
+|------|-----------|
+| UI / App | Flutter 3.x (Dart) |
+| Estado | Riverpod |
+| Navegación | go_router (deep links `/join/CODE`) |
+| Modelos | freezed + json_serializable |
+| Auth | firebase_auth + google_sign_in (email, Google, anónimo) |
+| BD tiempo real | cloud_firestore (`snapshots()`) |
+| Lógica servidor | Cloud Functions (TypeScript) |
+| Voz/Video | LiveKit (`livekit_client`) tras abstracción |
+| Chat texto/emoji | cloud_firestore |
+| Hosting web | GitHub Pages (Actions) |
+| Push | firebase_messaging |
+| Anuncios | google_mobile_ads / AdSense |
+
+## Fases
+
+| Fase | Contenido | Estado |
+|------|-----------|:------:|
+| 0 | Andamiaje, docs y migración del repo (legacy-web/, flutter create, workflows) | 🚧 |
+| 1 | Lógica pura del juego (domain) + tests migrados | ⬜ |
+| 2 | Juego solo en Flutter (UI, 4 temas) | ⬜ |
+| 3 | Auth + perfil + saldo persistente | ⬜ |
+| 4 | Social: amigos y transferencias | ⬜ |
+| 5 | Salas multijugador en tiempo real | ⬜ |
+| 6 | Comunicación en sala (chat + voz + cámara) | ⬜ |
+| 7 | Monetización y pulido (anuncios, leaderboard, PWA, push) | ⬜ |
+
+> Leyenda: ⬜ pendiente · 🚧 en curso · ✅ hecho. Actualizar al avanzar.
+
+**Cierre de cada fase:** `dart format` + `flutter analyze` + `flutter test` en verde, ficha en
+`docs/features/` y reglas en `docs/reglas-negocio/` creadas/actualizadas, README + CLAUDE.md al día, y
+un commit por fase.
+
+## Migración de la lógica del juego (JS → Dart)
+
+Las funciones puras se traducen línea por línea (sin DOM ni efectos); comportamiento idéntico,
+verificado por los tests migrados.
+
+| Origen (JS) | Destino (Dart) |
+|-------------|----------------|
+| `cartas.js` (puntos, infoMano, split, probabilidades, Hi-Lo) | `game/domain/cartas.dart` |
+| `estrategia.js` | `game/domain/estrategia.dart` |
+| `juego.js` (resolverMano, debePedirCrupier, opcionesActuales) | `game/domain/reglas.dart` |
+| `stats.js` (NIVELES, LOGROS, nivelActual) | `profile/domain/` |
+| `config.js` | `ConfigJuego` (freezed) |
+| `ui.js`, `main.js`, `audio.js` | No se migran (UI en widgets; sonidos en pulido) |
+| `tests/test.js` | `test/*.dart` |
+
+## CI/CD
+
+- `ci.yml` (push+PR): `flutter pub get` → `dart format --set-exit-if-changed .` → `flutter analyze` →
+  `flutter test`.
+- `deploy-web.yml` (push a main): `flutter build web --release --base-href /blackjack-21/` →
+  GitHub Pages.
+- `release.yml` (tag `v*`): APK (ubuntu) + iOS sin firmar (macos).
+
+> iOS sin firmar valida que compila. Instalar en iPhone real / publicar en App Store requiere cuenta
+> Apple Developer (US$99/año) + firma → paso manual futuro.
+
+## Estado de herramientas (al inicio de Fase 0)
+
+- ✅ Node, git, Firebase CLI instalados.
+- ❌ **Flutter / Dart no instalados** → bloquea `flutter create`, `analyze`, `test` y el código Dart.
+- ⏳ **Proyecto Firebase Blaze** pendiente de crear (requiere login + billing del usuario).
