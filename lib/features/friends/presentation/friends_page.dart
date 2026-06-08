@@ -163,8 +163,7 @@ class _TabAmigos extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 4),
           itemBuilder: (ctx, i) => _TarjetaAmigo(
             contacto: amigos[i],
-            onTransferir: () =>
-                ctx.push('/friends/transfer', extra: amigos[i]),
+            onTransferir: () => ctx.push('/friends/transfer', extra: amigos[i]),
           ),
         );
       },
@@ -218,10 +217,8 @@ class _TabSolicitudes extends ConsumerWidget {
       data: (todos) {
         final pendientes =
             todos.where((c) => c.estado == EstadoAmistad.pendiente).toList();
-        final recibidas =
-            pendientes.where((c) => !c.yoEnvie(myUid)).toList();
-        final enviadas =
-            pendientes.where((c) => c.yoEnvie(myUid)).toList();
+        final recibidas = pendientes.where((c) => !c.yoEnvie(myUid)).toList();
+        final enviadas = pendientes.where((c) => c.yoEnvie(myUid)).toList();
 
         if (pendientes.isEmpty) {
           return const _EstadoVacio(

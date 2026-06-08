@@ -11,9 +11,8 @@ class FirestoreFriendsRepository implements IFriendsRepository {
     FirebaseFirestore? db,
     FirebaseFunctions? functions,
   })  : _db = db ?? FirebaseFirestore.instance,
-        _functions = functions ?? FirebaseFunctions.instanceFor(
-          region: 'southamerica-east1',
-        );
+        _functions = functions ??
+            FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   final FirebaseFirestore _db;
   final FirebaseFunctions _functions;
@@ -26,9 +25,7 @@ class FirestoreFriendsRepository implements IFriendsRepository {
         .collection('contacts')
         .orderBy('since', descending: true)
         .snapshots()
-        .map(
-          (snap) => snap.docs.map(_docAContacto).toList(),
-        );
+        .map((snap) => snap.docs.map(_docAContacto).toList());
   }
 
   @override

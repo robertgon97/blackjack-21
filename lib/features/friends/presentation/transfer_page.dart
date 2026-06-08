@@ -59,8 +59,12 @@ class _TransferPageState extends ConsumerState<TransferPage> {
                 ),
                 validator: (v) {
                   final n = int.tryParse(v ?? '');
-                  if (n == null || n <= 0) return 'Ingresa un monto válido (entero positivo)';
-                  if (n > saldo) return 'Saldo insuficiente';
+                  if (n == null || n <= 0) {
+                    return 'Ingresa un monto válido (entero positivo)';
+                  }
+                  if (n > saldo) {
+                    return 'Saldo insuficiente';
+                  }
                   return null;
                 },
               ),
@@ -148,7 +152,8 @@ class _TransferPageState extends ConsumerState<TransferPage> {
       setState(() {
         _error = switch (e.code) {
           'failed-precondition' => 'Saldo insuficiente.',
-          'resource-exhausted' => 'Límite de 10 transferencias por hora alcanzado.',
+          'resource-exhausted' =>
+              'Límite de 10 transferencias por hora alcanzado.',
           'invalid-argument' => e.message ?? 'Datos inválidos.',
           'not-found' => 'Usuario no encontrado.',
           _ => 'Error: ${e.message}',

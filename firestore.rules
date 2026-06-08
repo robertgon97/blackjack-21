@@ -44,7 +44,8 @@ service cloud.firestore {
       // La creación del perfil y el saldo inicial los hace la Function onUserCreate.
       // En Fase 3/4, el cliente crea el perfil directamente (workaround hasta que
       // esté habilitado el plan Blaze y desplegada la Function).
-      allow create: if esDueno(uid);
+      // Se fuerza balance == 1000 para evitar que el cliente fije un saldo arbitrario.
+      allow create: if esDueno(uid) && request.resource.data.balance == 1000;
 
       // El dueño actualiza su perfil, pero NO balance ni lastAdReward.
       allow update: if esDueno(uid) && noTocaCamposProtegidos();
