@@ -57,3 +57,9 @@ tmp/
 # CI / Pages
 # ============================
 _site/
+
+# ============================
+# Credenciales Firebase (NUNCA commitear)
+# ============================
+*adminsdk*.json
+*service-account*.json
