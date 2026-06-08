@@ -91,8 +91,9 @@ class _PantallaLoginState extends ConsumerState<PantallaLogin> {
     if (msg.contains('email-already-in-use')) {
       return 'Ese email ya está registrado.';
     }
-    if (msg.contains('weak-password'))
+    if (msg.contains('weak-password')) {
       return 'Contraseña muy débil (mín. 6 caracteres).';
+    }
     if (msg.contains('cancelado')) return 'Login cancelado.';
     return 'Error al iniciar sesión. Intenta de nuevo.';
   }
@@ -178,8 +179,10 @@ class _PantallaLoginState extends ConsumerState<PantallaLogin> {
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: _cargando ? null : _entrarGoogle,
-                    icon: const Text('G',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    icon: const Text(
+                      'G',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     label: const Text('Continuar con Google'),
                   ),
                   const SizedBox(height: 8),
