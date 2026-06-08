@@ -91,8 +91,8 @@ class _TransferPageState extends ConsumerState<TransferPage> {
                 'La transferencia es irreversible.\nMáx. 10 por hora.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey,
-                ),
+                      color: Colors.grey,
+                    ),
               ),
             ],
           ),
@@ -133,9 +133,9 @@ class _TransferPageState extends ConsumerState<TransferPage> {
 
     try {
       await ref.read(friendsRepositoryProvider).transferirCreditos(
-        toUid: widget.contacto.uid,
-        monto: monto,
-      );
+            toUid: widget.contacto.uid,
+            monto: monto,
+          );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -150,7 +150,7 @@ class _TransferPageState extends ConsumerState<TransferPage> {
         _error = switch (e.code) {
           'failed-precondition' => 'Saldo insuficiente.',
           'resource-exhausted' =>
-              'Límite de 10 transferencias por hora alcanzado.',
+            'Límite de 10 transferencias por hora alcanzado.',
           'invalid-argument' => e.message ?? 'Datos inválidos.',
           'not-found' => 'Usuario no encontrado.',
           _ => 'Error: ${e.message}',
