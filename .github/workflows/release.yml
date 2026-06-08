@@ -5,9 +5,13 @@ on:
     tags:
       - "v*"
 
+# Para que softprops/action-gh-release pueda crear la Release
+permissions:
+  contents: write
+
 jobs:
   android:
-    name: APK Android
+    name: APK + AAB Android (firmados)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,16 +30,48 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
-      - name: Build APK (release sin firma)
+      # ── Firma ──────────────────────────────────────────────────────────────
+      # Requiere 4 GitHub Secrets (ver docs/arquitectura/ci-cd-y-firmas.md):
+      #   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+      #   ANDROID_KEYSTORE_KEY_ALIAS, ANDROID_KEYSTORE_KEY_PASSWORD
+      #
+      # Si los secrets aún no están configurados el step fallará con un error
+      # claro. Mientras tanto, comenta el bloque de firma y usa --release sin
+      # signing (el APK funcionará para pruebas pero no para Play Store).
+      - name: Decodificar keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" \
+            | base64 --decode > $HOME/upload-keystore.jks
+
+      - name: Crear key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEYSTORE_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEYSTORE_KEY_ALIAS }}
+          storeFile=$HOME/upload-keystore.jks
+          EOF
+      # ───────────────────────────────────────────────────────────────────────
+
+      - name: Build APK firmado
         run: flutter build apk --release
 
-      - name: Subir APK a la Release
+      - name: Build App Bundle firmado (Play Store)
+        run: flutter build appbundle --release
+
+      - name: Subir artefactos a la Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
 
   ios:
-    name: Build iOS (sin firma)
+    # iOS sin firma: valida que el código compila.
+    # Para distribuir en App Store se necesita cuenta Apple Developer (US$99/año)
+    # y configurar los secrets IOS_CERT_P12_BASE64, APP_STORE_CONNECT_*.
+    # Ver: docs/arquitectura/ci-cd-y-firmas.md sección 6.
+    name: Build iOS (sin codesign)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +97,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: blackjack-ios-unsigned.zip
-          body: |
-            > **iOS sin firma:** requiere cuenta Apple Developer (US$99/año) para instalar en
-            > dispositivo real o publicar en App Store. El artefacto valida que el código compila.

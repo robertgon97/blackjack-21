@@ -25,6 +25,12 @@ de arquitectura y la ficha de cada feature. Si el código y un documento de `reg
 - [`arquitectura/flutter-recursos-oficiales.md`](arquitectura/flutter-recursos-oficiales.md) —
   Recomendaciones oficiales de Flutter: Games Toolkit, patrón FirestoreController para multijugador,
   integración de AdMob (rewarded ads), logros, paquetes por fase.
+- [`arquitectura/ci-cd-y-firmas.md`](arquitectura/ci-cd-y-firmas.md) —
+  CI/CD completo: firma Android (keystore + GitHub Secrets + build.gradle), firma iOS, App Bundle
+  vs APK, flavors dev/prod, deep links `/join/CODE`, renderer web (CanvasKit vs WASM).
+- [`arquitectura/testing-strategy.md`](arquitectura/testing-strategy.md) —
+  Pirámide de tests: unit (✅ 32 tests), widget (Fase 2), integration (Fase 5), code coverage en
+  CI, performance 60fps, accesibilidad.
 
 ### 💼 Reglas de negocio
 - [`reglas-negocio/reglas-del-juego.md`](reglas-negocio/reglas-del-juego.md) — Reglas del Blackjack y

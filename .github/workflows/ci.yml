@@ -28,5 +28,18 @@ jobs:
       - name: Análisis estático
         run: flutter analyze --fatal-infos
 
-      - name: Tests unitarios
-        run: flutter test --reporter=expanded
+      - name: Tests con coverage
+        run: flutter test --coverage --reporter=expanded
+
+      - name: Instalar lcov
+        run: sudo apt-get install -y lcov
+
+      - name: Generar reporte HTML de coverage
+        run: genhtml coverage/lcov.info -o coverage/html
+
+      - name: Subir reporte de coverage como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/html
+          retention-days: 30
