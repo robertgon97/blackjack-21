@@ -16,10 +16,21 @@ class BotonesAccion extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final estado = ref.watch(controladorJuegoProvider);
+    // Solo reconstruye cuando cambian las opciones de la mano, no en cada carta.
+    final v = ref.watch(
+      controladorJuegoProvider.select((e) {
+        final opc = e.opcionesActivas;
+        return (
+          libre: !e.animando,
+          puedeDoblar: opc.puedeDoblar,
+          puedeDividir: opc.puedeDividir,
+          puedeRendirse: opc.puedeRendirse,
+          permitirRendirse: e.config.permitirRendirse,
+        );
+      }),
+    );
     final ctrl = ref.read(controladorJuegoProvider.notifier);
-    final opc = estado.opcionesActivas;
-    final libre = !estado.animando;
+    final libre = v.libre;
     final acento = context.tapete.acento;
 
     return Wrap(
@@ -43,23 +54,21 @@ class BotonesAccion extends ConsumerWidget {
           texto: 'DOBLAR',
           icono: Icons.exposure_plus_2,
           color: acento,
-          onTap:
-              libre && opc.puedeDoblar ? () => unawaited(ctrl.doblar()) : null,
+          onTap: libre && v.puedeDoblar ? () => unawaited(ctrl.doblar()) : null,
         ),
         _BotonAccion(
           texto: 'DIVIDIR',
           icono: Icons.call_split,
           color: acento,
-          onTap: libre && opc.puedeDividir
-              ? () => unawaited(ctrl.dividir())
-              : null,
+          onTap:
+              libre && v.puedeDividir ? () => unawaited(ctrl.dividir()) : null,
         ),
-        if (estado.config.permitirRendirse)
+        if (v.permitirRendirse)
           _BotonAccion(
             texto: 'RENDIRSE',
             icono: Icons.flag,
             color: acento,
-            onTap: libre && opc.puedeRendirse
+            onTap: libre && v.puedeRendirse
                 ? () => unawaited(ctrl.rendirse())
                 : null,
           ),

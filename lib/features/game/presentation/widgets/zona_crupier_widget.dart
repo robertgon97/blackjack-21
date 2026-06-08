@@ -30,7 +30,7 @@ class ZonaCrupierWidget extends StatelessWidget {
         _Etiqueta(texto: 'Crupier', puntos: puntosTexto),
         const SizedBox(height: 8),
         SizedBox(
-          height: 64 * 1.42,
+          height: CartaWidget.altoPara(CartaWidget.anchoDefecto),
           child: cartas.isEmpty
               ? const SizedBox.shrink()
               : Row(

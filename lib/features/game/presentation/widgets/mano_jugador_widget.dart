@@ -27,7 +27,7 @@ class ManoJugadorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (manos.isEmpty) {
-      return const SizedBox(height: 64 * 1.42);
+      return SizedBox(height: CartaWidget.altoPara(CartaWidget.anchoDefecto));
     }
     return Wrap(
       alignment: WrapAlignment.center,
@@ -83,7 +83,7 @@ class _ManoUnica extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            height: 64 * 1.42,
+            height: CartaWidget.altoPara(CartaWidget.anchoDefecto),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

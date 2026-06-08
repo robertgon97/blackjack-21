@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/temas.dart';
+import '../../../core/utils/formato.dart';
 import 'controlador_juego.dart';
 import 'estado_juego.dart';
 import 'widgets/barra_estado.dart';
@@ -118,7 +119,7 @@ class _Mensaje extends StatelessWidget {
         if (estado.resultadoNeto != null) ...[
           const SizedBox(height: 6),
           Text(
-            _formatoNeto(estado.resultadoNeto!),
+            dineroConSigno(estado.resultadoNeto!),
             style: TextStyle(
               color: colorResultado,
               fontSize: 26,
@@ -128,12 +129,6 @@ class _Mensaje extends StatelessWidget {
         ],
       ],
     );
-  }
-
-  String _formatoNeto(int neto) {
-    if (neto > 0) return '+\$$neto';
-    if (neto < 0) return '-\$${neto.abs()}';
-    return '\$0';
   }
 }
 

@@ -9,16 +9,29 @@ import '../../domain/modelos.dart';
 /// Pinta una [Carta] del juego. Si [carta] es null, muestra el reverso
 /// (carta boca abajo del crupier).
 class CartaWidget extends StatelessWidget {
+  /// Proporción alto/ancho de un naipe.
+  static const double proporcion = 1.42;
+
+  /// Ancho por defecto de las cartas en el tapete.
+  static const double anchoDefecto = 64;
+
+  /// Alto de una carta para un [ancho] dado (útil para reservar espacio).
+  static double altoPara(double ancho) => ancho * proporcion;
+
   final Carta? carta;
 
-  /// Ancho de la carta; el alto se calcula con proporción de naipe (~1.4).
+  /// Ancho de la carta; el alto se calcula con [proporcion].
   final double ancho;
 
-  const CartaWidget({super.key, required this.carta, this.ancho = 64});
+  const CartaWidget({
+    super.key,
+    required this.carta,
+    this.ancho = anchoDefecto,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final alto = ancho * 1.42;
+    final alto = ancho * proporcion;
     if (carta == null) return _reverso(alto);
     return _cara(context, alto);
   }

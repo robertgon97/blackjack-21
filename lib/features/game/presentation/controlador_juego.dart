@@ -136,7 +136,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   // ----------------------------------------------------------
 
   Future<void> repartir() async {
-    if (state.animando) return;
+    if (state.animando || state.fase != FaseJuego.apuestas) return;
     if (state.apuesta < state.config.apuestaMin) {
       _avisar('Apuesta mínima: \$${state.config.apuestaMin}.');
       return;
@@ -162,9 +162,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
       manoCrupier: const [],
       crupierOculto: true,
       seguro: 0,
-      partesResultado: const [],
       limpiarResultadoNeto: true,
-      signoResultado: SignoResultado.neutro,
       consejo: '',
       probabilidad: '',
       mensaje: 'Repartiendo...',
@@ -247,13 +245,13 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   // ----------------------------------------------------------
 
   Future<void> _iniciarTurnoJugador() async {
-    if (calcularPuntos(state.manoCrupier) == 21) {
-      _revelarCrupier();
-      await _pausa(600);
-      _finalizarRonda();
-      return;
-    }
-    if (calcularPuntos(state.manos[0].cartas) == 21) {
+    // Bloquea los botones de acción durante la pausa de resolución: un 21
+    // natural (jugador o crupier) cierra la ronda sin turno del jugador, y la
+    // fase sigue siendo `jugando` mientras tanto.
+    final hayBlackjack = calcularPuntos(state.manoCrupier) == 21 ||
+        calcularPuntos(state.manos[0].cartas) == 21;
+    if (hayBlackjack) {
+      state = state.copyWith(animando: true);
       _revelarCrupier();
       await _pausa(600);
       _finalizarRonda();
@@ -543,10 +541,6 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     final textoCrupier = pc > 21 ? 'se pasó ($pc)' : '$pc';
     final mensaje = 'Crupier: $textoCrupier. ${partes.join(' · ')}';
 
-    final signo = netoTotal > 0
-        ? SignoResultado.positivo
-        : (netoTotal < 0 ? SignoResultado.negativo : SignoResultado.neutro);
-
     state = _conInfoShoe(
       state.copyWith(
         fase: FaseJuego.resultado,
@@ -555,9 +549,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
         apuesta: 0,
         seguro: 0,
         mensaje: mensaje,
-        partesResultado: partes,
         resultadoNeto: netoTotal,
-        signoResultado: signo,
         consejo: '',
         probabilidad: '',
       ),
@@ -569,7 +561,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   // ----------------------------------------------------------
 
   void nuevaRonda() {
-    if (state.animando) return;
+    if (state.animando || state.fase != FaseJuego.resultado) return;
     state = state.copyWith(
       fase: FaseJuego.apuestas,
       manos: const [],
@@ -578,9 +570,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
       crupierOculto: true,
       apuesta: 0,
       seguro: 0,
-      partesResultado: const [],
       limpiarResultadoNeto: true,
-      signoResultado: SignoResultado.neutro,
       consejo: '',
       probabilidad: '',
       mensaje: 'Elige tu apuesta para la siguiente mano.',
@@ -589,7 +579,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
 
   /// Préstamo de emergencia cuando la banca llega a cero.
   void pedirPrestamo() {
-    if (state.animando) return;
+    if (state.animando || state.fase != FaseJuego.resultado) return;
     state = state.copyWith(banca: state.banca + 500);
     _avisar('Préstamo de \$500 concedido.');
     nuevaRonda();

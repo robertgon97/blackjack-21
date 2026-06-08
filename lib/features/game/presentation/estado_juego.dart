@@ -68,14 +68,8 @@ class EstadoJuego {
   /// Texto de probabilidad de pasarse (vacío si está desactivada).
   final String probabilidad;
 
-  /// Líneas con el desglose del resultado de cada mano.
-  final List<String> partesResultado;
-
   /// Resultado neto de la ronda (ganancia − apostado). Null durante el juego.
   final int? resultadoNeto;
-
-  /// Signo del resultado, para el color del monto.
-  final SignoResultado signoResultado;
 
   // --- Información del shoe (copiada para que la UI reaccione) ---
   final int conteoCorrido;
@@ -104,9 +98,7 @@ class EstadoJuego {
     required this.mensaje,
     required this.consejo,
     required this.probabilidad,
-    required this.partesResultado,
     required this.resultadoNeto,
-    required this.signoResultado,
     required this.conteoCorrido,
     required this.conteoVerdadero,
     required this.cartasRestantes,
@@ -132,9 +124,7 @@ class EstadoJuego {
       mensaje: 'Elige tu apuesta para empezar.',
       consejo: '',
       probabilidad: '',
-      partesResultado: const [],
       resultadoNeto: null,
-      signoResultado: SignoResultado.neutro,
       conteoCorrido: 0,
       conteoVerdadero: 0,
       cartasRestantes: 0,
@@ -151,6 +141,13 @@ class EstadoJuego {
 
   /// `true` si el jugador se quedó sin saldo (ofrecer préstamo).
   bool get sinDinero => banca <= 0;
+
+  /// Signo del resultado neto de la ronda, para colorear el monto.
+  SignoResultado get signoResultado {
+    final neto = resultadoNeto;
+    if (neto == null || neto == 0) return SignoResultado.neutro;
+    return neto > 0 ? SignoResultado.positivo : SignoResultado.negativo;
+  }
 
   /// Puntos de la mano activa (0 si no hay).
   int get puntosJugador {
@@ -197,10 +194,8 @@ class EstadoJuego {
     String? mensaje,
     String? consejo,
     String? probabilidad,
-    List<String>? partesResultado,
     int? resultadoNeto,
     bool limpiarResultadoNeto = false,
-    SignoResultado? signoResultado,
     int? conteoCorrido,
     double? conteoVerdadero,
     int? cartasRestantes,
@@ -223,10 +218,8 @@ class EstadoJuego {
       mensaje: mensaje ?? this.mensaje,
       consejo: consejo ?? this.consejo,
       probabilidad: probabilidad ?? this.probabilidad,
-      partesResultado: partesResultado ?? this.partesResultado,
       resultadoNeto:
           limpiarResultadoNeto ? null : (resultadoNeto ?? this.resultadoNeto),
-      signoResultado: signoResultado ?? this.signoResultado,
       conteoCorrido: conteoCorrido ?? this.conteoCorrido,
       conteoVerdadero: conteoVerdadero ?? this.conteoVerdadero,
       cartasRestantes: cartasRestantes ?? this.cartasRestantes,

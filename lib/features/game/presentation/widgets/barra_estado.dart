@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/tema_provider.dart';
 import '../../../../core/theme/temas.dart';
+import '../../../../core/utils/formato.dart';
 import '../controlador_juego.dart';
+import '../estado_juego.dart';
 import 'panel_ajustes.dart';
 
 /// Cabecera con la banca, lo apostado, el conteo (si está activo) y los
@@ -17,7 +19,19 @@ class BarraEstado extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final estado = ref.watch(controladorJuegoProvider);
+    // Solo reconstruye cuando cambian los datos de la barra, no en cada carta.
+    final datos = ref.watch(
+      controladorJuegoProvider.select(
+        (e) => (
+          banca: e.banca,
+          enJuego: e.totalEnJuego,
+          mostrarConteo: e.config.mostrarConteo,
+          conteoCorrido: e.conteoCorrido,
+          conteoVerdadero: e.conteoVerdadero,
+          enRonda: e.fase == FaseJuego.jugando || e.fase == FaseJuego.seguro,
+        ),
+      ),
+    );
     final temaActual = ref.watch(temaProvider);
     final acento = context.tapete.acento;
 
@@ -29,15 +43,15 @@ class BarraEstado extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          _Dato(etiqueta: 'Banca', valor: '\$${estado.banca}', acento: acento),
+          _Dato(etiqueta: 'Banca', valor: dinero(datos.banca), acento: acento),
           const SizedBox(width: 16),
-          _Dato(etiqueta: 'En juego', valor: '\$${estado.totalEnJuego}'),
-          if (estado.config.mostrarConteo) ...[
+          _Dato(etiqueta: 'En juego', valor: dinero(datos.enJuego)),
+          if (datos.mostrarConteo) ...[
             const SizedBox(width: 16),
             _Dato(
               etiqueta: 'Conteo',
               valor:
-                  '${estado.conteoCorrido} (${estado.conteoVerdadero.toStringAsFixed(1)})',
+                  '${datos.conteoCorrido} (${datos.conteoVerdadero.toStringAsFixed(1)})',
             ),
           ],
           const Spacer(),
