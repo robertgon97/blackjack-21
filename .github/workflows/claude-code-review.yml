@@ -1,0 +1,49 @@
+name: Claude Code Review
+
+# Revisión automática de Claude al abrir o actualizar un PR.
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Revisión de Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Revisa este pull request del proyecto Blackjack 21 (Flutter + Firebase).
+            Responde SIEMPRE en español, con acentos correctos.
+
+            Enfócate en:
+            - Corrección de la lógica y posibles bugs o regresiones.
+            - Respeto de la arquitectura por capas: `domain` nunca importa Flutter,
+              Firebase ni widgets (lógica pura). `data` implementa interfaces de `domain`.
+            - Que no se duplique lógica entre capas (si está en `domain`, se reutiliza).
+            - Convenciones del repo: comentarios y UI en español, coma final en
+              listas/params multilínea, doc-comments `///` en las APIs públicas de `domain`.
+            - Implicaciones de seguridad y de rendimiento.
+
+            Nota: la rama del PR ya está clonada en el directorio actual.
+
+            Usa `gh pr comment` para comentarios generales.
+            Usa `mcp__github_inline_comment__create_inline_comment` (con `confirmed: true`)
+            para señalar problemas concretos en líneas específicas.
+            Publica solo comentarios en GitHub; no devuelvas el texto de la revisión como mensaje.
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
