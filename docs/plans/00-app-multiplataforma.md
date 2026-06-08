@@ -22,7 +22,7 @@ opcional para ver reacciones).
 - **Backend:** Firebase Blaze (Auth + Firestore + Cloud Functions + Hosting/Messaging).
 - **Turnos multijugador:** simultáneos, con temporizador de 45 s (configurable por el host).
 - **Repo:** el mismo; el juego JS original se archiva en `legacy-web/`.
-- **CI/CD:** Web (GitHub Pages), Android APK e iOS (build sin firmar).
+- **CI/CD:** Web (GitHub Pages + Firebase Hosting), Android APK e iOS (build sin firmar), deploy automático de reglas e índices de Firestore.
 - **Comunicación en sala:** chat de texto + emojis, voz y cámara opcional (apagada por defecto).
 - **Voz/video:** LiveKit (open-source, nube gratis, self-hosteable), **detrás de una abstracción**
   para poder cambiar de proveedor sin tocar la UI.
@@ -61,7 +61,7 @@ opcional para ver reacciones).
 | Lógica servidor | Cloud Functions (TypeScript) |
 | Voz/Video | LiveKit (`livekit_client`) tras abstracción |
 | Chat texto/emoji | cloud_firestore |
-| Hosting web | GitHub Pages (Actions) |
+| Hosting web | Firebase Hosting + GitHub Pages (ambos por Actions) |
 | Push | firebase_messaging |
 | Anuncios | google_mobile_ads / AdSense |
 
@@ -105,13 +105,22 @@ verificado por los tests migrados.
   `flutter test`.
 - `deploy-web.yml` (push a main): `flutter build web --release --base-href /blackjack-21/` →
   GitHub Pages.
+- `deploy-firebase.yml` (push a main): dos jobs en paralelo:
+  - Firestore: `firebase deploy --only firestore:rules,firestore:indexes`
+  - Hosting: `flutter build web --release` → `firebase deploy --only hosting`
+  - Autenticado con `FIREBASE_SERVICE_ACCOUNT` (secret en GitHub Actions, **nunca en el repo**).
+  - Al agregar Functions (Fase 4+): solo extender `--only` con `functions`.
 - `release.yml` (tag `v*`): APK (ubuntu) + iOS sin firmar (macos).
 
 > iOS sin firmar valida que compila. Instalar en iPhone real / publicar en App Store requiere cuenta
 > Apple Developer (US$99/año) + firma → paso manual futuro.
 
-## Estado de herramientas (al inicio de Fase 0)
+## Estado de herramientas
 
 - ✅ Node, git, Firebase CLI instalados.
-- ❌ **Flutter / Dart no instalados** → bloquea `flutter create`, `analyze`, `test` y el código Dart.
-- ⏳ **Proyecto Firebase Blaze** pendiente de crear (requiere login + billing del usuario).
+- ✅ Flutter / Dart instalados.
+- ✅ Proyecto Firebase `blackjack-21-app` configurado (Firestore `southamerica-east1`, Auth, Hosting).
+- ✅ `firebase_options.dart` generado con FlutterFire CLI (web, Android, iOS, Windows).
+- ✅ `FIREBASE_SERVICE_ACCOUNT` cargado como secret en GitHub Actions → deploy automático sin intervención manual.
+- ⏳ **Plan Blaze** en Firebase: habilitar si aún no está (necesario para Cloud Functions en Fase 4+).
+- ⏳ Habilitar proveedores Auth en consola Firebase: Email/Password, Google, Anónimo.
