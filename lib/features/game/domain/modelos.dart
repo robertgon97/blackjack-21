@@ -23,7 +23,19 @@ enum Palo {
 /// Se modelan como `String` (igual que en la versión original) para
 /// distinguir figuras ('J', 'Q', 'K') del 10 sin ambigüedad.
 const List<String> valoresBaraja = [
-  'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K',
+  'A',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '10',
+  'J',
+  'Q',
+  'K',
 ];
 
 /// Una carta de la baraja: un palo y un valor.

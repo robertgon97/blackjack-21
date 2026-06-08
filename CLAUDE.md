@@ -165,7 +165,11 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 
 - `lib/firebase_options.dart` (generado por `flutterfire configure`)
 - Cloud Functions en `functions/src/` (TypeScript)
-- `lib/core/router/app_router.dart` (go_router)
-- Riverpod providers por feature
-- Temas (`ThemeData`) con las 4 paletas del juego viejo
-- Fichas de `docs/features/` para cada feature al implementarla
+- `lib/core/router/app_router.dart` (go_router) — la app aún arranca directo en la pantalla de juego
+- Riverpod providers para el resto de features (auth, wallet, rooms…)
+- `freezed` para los modelos (hoy son inmutables con `copyWith` a mano)
+- Fichas de `docs/features/` para las features restantes
+
+> **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
+> controlador Riverpod (`features/game/presentation/`). Ficha:
+> [`docs/features/juego-solo.md`](docs/features/juego-solo.md).

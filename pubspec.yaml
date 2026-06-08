@@ -9,7 +9,7 @@ environment:
 # NOTA: dependencias añadidas por fase para evitar fijar versiones que queden
 # obsoletas. Fase 1 (lógica pura + tests) solo necesita el SDK de Flutter.
 # Las siguientes se agregarán al llegar a su fase:
-#   - flutter_riverpod, go_router          (Fase 2: UI y navegación)
+#   - go_router                             (Fase 2+: navegación y deep links)
 #   - firebase_core, firebase_auth,
 #     cloud_firestore, cloud_functions     (Fase 3+: backend)
 #   - livekit_client                        (Fase 6: voz/cámara)
@@ -18,6 +18,9 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  # Fase 2: gestión de estado (UI ↔ lógica de dominio). Se usa con un Notifier
+  # escrito a mano (sin codegen) para no depender de build_runner.
+  flutter_riverpod: ^2.5.1
 
 dev_dependencies:
   flutter_test:

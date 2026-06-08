@@ -15,7 +15,9 @@ import 'modelos.dart';
 bool debePedirCrupier(List<Carta> manoCrupier, ConfigJuego config) {
   final info = infoMano(manoCrupier);
   if (info.total < 17) return true;
-  if (info.total == 17 && info.suave && config.crupierPideEn17Suave) return true;
+  if (info.total == 17 && info.suave && config.crupierPideEn17Suave) {
+    return true;
+  }
   return false;
 }
 
@@ -69,7 +71,11 @@ ResultadoMano resolverMano({
     ganancia = mano.apuesta;
   }
 
-  return ResultadoMano(estado: estado, ganancia: ganancia, esBlackjack: esBlackjack);
+  return ResultadoMano(
+    estado: estado,
+    ganancia: ganancia,
+    esBlackjack: esBlackjack,
+  );
 }
 
 /// ¿Se puede dividir (split) esta mano?
