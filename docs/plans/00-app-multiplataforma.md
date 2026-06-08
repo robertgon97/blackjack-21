@@ -72,7 +72,7 @@ opcional para ver reacciones).
 | 0 | Andamiaje, docs y migración del repo (legacy-web/, flutter create, workflows) | ✅ |
 | 1 | Lógica pura del juego (domain) + tests migrados | ✅ |
 | 2 | Juego solo en Flutter (UI, 4 temas) | ✅ |
-| 3 | Auth + perfil + saldo persistente | ⬜ |
+| 3 | Auth + perfil + saldo persistente | ✅ |
 | 4 | Social: amigos y transferencias | ⬜ |
 | 5 | Salas multijugador en tiempo real | ⬜ |
 | 6 | Comunicación en sala (chat + voz + cámara) | ⬜ |

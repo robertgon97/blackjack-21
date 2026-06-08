@@ -163,13 +163,18 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 
 ## Pendiente (fases futuras)
 
-- `lib/firebase_options.dart` (generado por `flutterfire configure`)
-- Cloud Functions en `functions/src/` (TypeScript)
-- `lib/core/router/app_router.dart` (go_router) — la app aún arranca directo en la pantalla de juego
-- Riverpod providers para el resto de features (auth, wallet, rooms…)
+- `lib/firebase_options.dart` (generado por `flutterfire configure`) — acción manual del usuario
+- Cloud Functions en `functions/src/` (TypeScript) — escriben `balance` y `transactions`
+- Riverpod providers para las features que faltan (rooms, comms, profile…)
 - `freezed` para los modelos (hoy son inmutables con `copyWith` a mano)
-- Fichas de `docs/features/` para las features restantes
+- Fichas de `docs/features/` para las features restantes (rooms, comms, profile…)
+- **Fase 4 (siguiente):** social — amigos y transferencias (ver `docs/reglas-negocio/social.md`)
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
 > [`docs/features/juego-solo.md`](docs/features/juego-solo.md).
+>
+> **Hecho en Fase 3:** auth (email/Google/anónimo), perfil + saldo persistente en Firestore,
+> historial de movimientos y `go_router` con guard de sesión (`core/router/app_router.dart`).
+> Repos tras interfaz: `features/auth/`, `features/wallet/`. Ficha:
+> [`docs/features/auth-y-saldo.md`](docs/features/auth-y-saldo.md).

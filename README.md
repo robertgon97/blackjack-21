@@ -10,7 +10,7 @@ Disponible en **Android**, **Web**, **Windows** e **iOS**.
 | 0 | Andamiaje, docs y migración del repo | ✅ Completa |
 | 1 | Lógica pura (domain) + 32 tests | ✅ Completa |
 | 2 | Juego solo en Flutter (UI, 4 temas) | ✅ Completa |
-| 3 | Auth + perfil + saldo persistente | 🔲 Pendiente |
+| 3 | Auth + perfil + saldo persistente | ✅ Completa |
 | 4 | Social: amigos y transferencias | 🔲 Pendiente |
 | 5 | Salas multijugador en tiempo real | 🔲 Pendiente |
 | 6 | Comunicación en sala (chat + voz + cámara) | 🔲 Pendiente |
