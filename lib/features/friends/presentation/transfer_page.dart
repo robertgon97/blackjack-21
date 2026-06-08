@@ -133,9 +133,9 @@ class _TransferPageState extends ConsumerState<TransferPage> {
 
     try {
       await ref.read(friendsRepositoryProvider).transferirCreditos(
-            toUid: widget.contacto.uid,
-            monto: monto,
-          );
+        toUid: widget.contacto.uid,
+        monto: monto,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
