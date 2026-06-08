@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/i_auth_repository.dart';
 import 'auth_provider.dart';
 
 /// Pantalla de inicio de sesión: email/contraseña, Google y modo demo anónimo.

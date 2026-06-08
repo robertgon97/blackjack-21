@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/auth/domain/perfil_usuario.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/pantalla_login.dart';
 import '../../features/game/presentation/pantalla_juego.dart';
@@ -42,7 +41,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 /// Hace que GoRouter se refresque cuando cambia el estado de auth.
 class _PerfilListenable extends ChangeNotifier {
-  _PerfilListenable(ProviderRef ref) {
+  _PerfilListenable(Ref ref) {
     ref.listen(perfilStreamProvider, (_, __) => notifyListeners());
   }
 }
