@@ -41,6 +41,9 @@ de arquitectura y la ficha de cada feature. Si el código y un documento de `reg
   temporizadores y roles.
 - [`reglas-negocio/social.md`](reglas-negocio/social.md) — Amigos, invitaciones y transferencias.
 
+### 📝 Historial de trabajo
+- [`errores-y-correcciones.md`](errores-y-correcciones.md) — registro de errores del asistente y sus correcciones.
+
 ### 🧩 Features
 - [`features/_plantilla-feature.md`](features/_plantilla-feature.md) — Plantilla para documentar cada
   feature nueva.

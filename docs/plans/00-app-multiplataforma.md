@@ -27,6 +27,15 @@ opcional para ver reacciones).
 - **Voz/video:** LiveKit (open-source, nube gratis, self-hosteable), **detrás de una abstracción**
   para poder cambiar de proveedor sin tocar la UI.
 
+## Flujo de trabajo con el asistente (reglas de colaboración)
+
+- **Aprobación antes de commitear:** el asistente prepara los cambios y los explica, pero
+  **no hace `git push` sin confirmación explícita del usuario**. Cada commit se muestra antes
+  de ejecutarse; el usuario dice "sí" o pide ajustes.
+- **Registro de errores:** si el asistente comete un error (código incorrecto, suposición equivocada,
+  regresión), lo documenta inmediatamente en [`../errores-y-correcciones.md`](../errores-y-correcciones.md)
+  con: qué falló, por qué, y qué se corrigió. Ese archivo es el historial de aprendizaje del proyecto.
+
 ## Principios de calidad (no negociables)
 
 - **Arquitectura limpia por capas:** `domain` (lógica pura) → `data` (repositorios) → `presentation`

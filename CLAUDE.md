@@ -4,6 +4,14 @@
 > y las reglas de negocio en [`docs/reglas-negocio/`](docs/reglas-negocio/).
 > La carpeta [`docs/`](docs/README.md) es la **fuente de verdad** del proyecto.
 
+## Reglas de colaboración
+
+- **Aprobación antes de commitear:** prepara los cambios y explícalos, pero **no hagas `git push`
+  sin confirmación explícita del usuario**. Muestra el commit y espera el "sí" o los ajustes.
+- **Registro de errores:** si cometes un error (código incorrecto, regresión, suposición equivocada),
+  documéntalo en [`docs/errores-y-correcciones.md`](docs/errores-y-correcciones.md) antes de
+  corregirlo — fecha, qué falló, causa, corrección, aprendizaje.
+
 ## Qué es
 
 App multiplataforma de Blackjack (21) con multijugador en tiempo real. Desarrollada en **Flutter**
