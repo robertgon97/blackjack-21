@@ -20,7 +20,5 @@ final saldoProvider = StreamProvider<int>((ref) {
 final transaccionesProvider = StreamProvider<List<Transaccion>>((ref) {
   final perfil = ref.watch(perfilStreamProvider).valueOrNull;
   if (perfil == null) return const Stream.empty();
-  return ref
-      .watch(walletRepositoryProvider)
-      .transaccionesStream(perfil.uid);
+  return ref.watch(walletRepositoryProvider).transaccionesStream(perfil.uid);
 });
