@@ -126,6 +126,13 @@ class FirebaseAuthRepository implements IAuthRepository {
       'lastSeen': FieldValue.serverTimestamp(),
     };
     await ref.set(datos);
+
+    // Registro en la lookup-table de códigos para que otros puedan encontrarte.
+    await _db.collection('invite_codes').doc(codigo).set({
+      'uid': user.uid,
+      'displayName': nombre,
+      'avatar': user.photoURL ?? '🃏',
+    });
     return PerfilUsuario(
       uid: user.uid,
       displayName: nombre,
