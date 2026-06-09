@@ -75,7 +75,11 @@ class _PantallaConversionState extends ConsumerState<PantallaConversion> {
   void _alExito() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('¡Cuenta creada! +500 créditos de regalo.')),
+      const SnackBar(
+        content: Text(
+          '¡Cuenta creada! Tu bono de bienvenida se acreditará en breve.',
+        ),
+      ),
     );
     context.go('/');
   }

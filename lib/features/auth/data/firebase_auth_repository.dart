@@ -115,13 +115,17 @@ class FirebaseAuthRepository implements IAuthRepository {
         password: password,
       );
       cred = await user.linkWithCredential(credential);
-      await cred.user!.updateDisplayName(displayName);
     } on FirebaseAuthException catch (e) {
       // Solo los errores de la vinculación Auth se propagan a la UI.
       throw Exception(_mensajeVinculacion(e.code));
     }
     // A partir de aquí la cuenta YA es permanente: nada debe bloquear al
     // usuario ni propagar un error que rompa el flujo de reintento.
+    try {
+      await cred.user!.updateDisplayName(displayName);
+    } catch (e) {
+      debugPrint('Conversión: no se pudo actualizar displayName en Auth: $e');
+    }
     return _finalizarConversion(
       cred.user!,
       displayName: displayName,
@@ -188,18 +192,41 @@ class FirebaseAuthRepository implements IAuthRepository {
     } catch (e) {
       debugPrint('Conversión: no se pudo actualizar el perfil: $e');
     }
-    return _fetchPerfil(user);
+    // La cuenta ya es permanente: si la lectura del perfil falla (red), no
+    // propagamos —el perfilStream lo corregirá— y devolvemos un perfil mínimo.
+    try {
+      return await _fetchPerfil(user);
+    } catch (e) {
+      debugPrint('Conversión: error al leer perfil post-link: $e');
+      return PerfilUsuario(
+        uid: user.uid,
+        displayName: displayName ?? user.displayName ?? 'Jugador',
+        email: email ?? user.email ?? '',
+        avatar: avatar ?? user.photoURL ?? '🃏',
+        balance: 0,
+        inviteCode: '',
+        isAnonymous: false,
+      );
+    }
   }
+
+  /// Reclamos de bono en vuelo, por uid, para no disparar llamadas concurrentes
+  /// a la Function (el refresco de token re-emite en `userChanges()`).
+  final Set<String> _bonoEnProgreso = {};
 
   /// Refresca el token (para que deje de ser anónimo) y reclama el bono de
   /// conversión. La Function es idempotente y nunca relanza: si falla, el bono
   /// queda pendiente y se reintenta en el próximo [_fetchPerfil].
   Future<void> _reclamarBonoConversion(User user) async {
+    if (_bonoEnProgreso.contains(user.uid)) return;
+    _bonoEnProgreso.add(user.uid);
     try {
       await user.getIdToken(true);
       await _functions.httpsCallable('claimConversionBonus').call<void>();
     } catch (e) {
       debugPrint('Conversión: bono pendiente, se reintentará: $e');
+    } finally {
+      _bonoEnProgreso.remove(user.uid);
     }
   }
 
@@ -292,6 +319,9 @@ class FirebaseAuthRepository implements IAuthRepository {
         'provider-already-linked' =>
           'Ese email ya tiene una cuenta. Inicia sesión en ella, pero perderás '
               'el progreso de esta sesión de demo.',
+        'account-exists-with-different-credential' =>
+          'Ya existe una cuenta con ese email usando otro método de inicio de '
+              'sesión. Entra con el método original (email/contraseña o Google).',
         'invalid-email' => 'Email inválido.',
         'weak-password' => 'Contraseña muy débil (mín. 6 caracteres).',
         'requires-recent-login' =>
