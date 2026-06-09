@@ -33,7 +33,8 @@ service cloud.firestore {
     // ¿La escritura mantiene intactos los campos que solo las Functions pueden tocar?
     function noTocaCamposProtegidos() {
       return request.resource.data.balance == resource.data.balance &&
-        request.resource.data.lastAdReward == resource.data.lastAdReward;
+        request.resource.data.lastAdReward == resource.data.lastAdReward &&
+        request.resource.data.conversionBonusGranted == resource.data.get('conversionBonusGranted', false);
     }
 
     // ---------- users ----------

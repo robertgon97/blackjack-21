@@ -15,6 +15,7 @@ El documento de perfil de cada usuario. El `uid` es el de Firebase Auth.
 | `balance` | int | 🔒 Saldo de créditos. Solo Functions lo escriben |
 | `inviteCode` | string | Código único para invitar (ej. `ROB-X4K2`) |
 | `isAnonymous` | bool | `true` si es cuenta demo sin registrar |
+| `conversionBonusGranted` | bool | 🔒 `true` tras dar el bono de conversión demo → cuenta real (idempotencia) |
 | `stats` | map | `{ jugadas, ganadas, perdidas, blackjacks, rachaMaxima, mayorBanca }` |
 | `nivel` | string | Nivel actual (derivado de `mayorBanca`) |
 | `lastAdReward` | timestamp | 🔒 Última vez que cobró un anuncio (throttle) |
@@ -27,7 +28,7 @@ Historial de movimientos de créditos. **Solo Functions escriben aquí**; el cli
 
 | Campo | Tipo | Notas |
 |-------|------|-------|
-| `type` | string | `win` · `loss` · `push` · `transfer_in` · `transfer_out` · `ad_reward` · `bonus_registro` · `bonus_invitacion` |
+| `type` | string | `win` · `loss` · `push` · `transfer_in` · `transfer_out` · `ad_reward` · `bonus_registro` · `bonus_invitacion` · `bonus_conversion` |
 | `amount` | int | Monto del movimiento (positivo) |
 | `balance_after` | int | Saldo resultante tras el movimiento |
 | `description` | string | Texto legible (ej. "Ganaste la ronda - Blackjack") |

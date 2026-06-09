@@ -13,7 +13,7 @@ privilegios de admin).
 
 | Colección | Lectura | Escritura |
 |-----------|---------|-----------|
-| `users/{uid}` | El dueño + sus amigos aceptados | El dueño, **excepto `balance` y `lastAdReward`** (solo Functions) |
+| `users/{uid}` | El dueño + sus amigos aceptados | El dueño, **excepto `balance`, `lastAdReward` y `conversionBonusGranted`** (solo Functions) |
 | `users/{uid}/transactions` | Solo el dueño | **Bloqueada** al cliente (solo Functions) |
 | `friendships/{uid}/contacts` | El dueño | El dueño (crear solicitud) y la Function que confirma |
 | `rooms/{roomId}` | Pública si `!private`; si no, solo miembros | Host y jugadores del room (campos permitidos) |
@@ -34,6 +34,7 @@ Todas usan el Admin SDK (saltan las Rules) y validan en servidor:
 | Function | Qué hace | Validaciones |
 |----------|----------|--------------|
 | `onUserCreate` (trigger) | Crea el doc de `users` y da el bono de registro | Solo se dispara una vez por usuario |
+| `claimConversionBonus` | Da el bono de +500 al convertir cuenta anónima → permanente | El token ya **no** es anónimo (`sign_in_provider != 'anonymous'`); **idempotente** vía `conversionBonusGranted`; transacción atómica |
 | `transferCredits` | Mueve créditos entre dos usuarios | Saldo suficiente; no auto-transferencia; ambos existen; **rate-limit 10/hora/uid**; monto > 0; transacción atómica (Firestore transaction) |
 | `rewardAd` | Acredita créditos por ver un anuncio | `lastAdReward` debe ser > 1 hora antes; idealmente verificar el callback del proveedor de anuncios |
 | `startRound` | Genera el shoe y reparte | Solicitante es host; la sala está en fase `betting`; hay jugadores listos |

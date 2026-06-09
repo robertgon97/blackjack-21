@@ -73,6 +73,7 @@ opcional para ver reacciones).
 | 1 | Lógica pura del juego (domain) + tests migrados | ✅ |
 | 2 | Juego solo en Flutter (UI, 4 temas) | ✅ |
 | 3 | Auth + perfil + saldo persistente | ✅ |
+| 3.5 | Conversión de cuenta anónima → permanente (account linking + bono) | ⬜ |
 | 4 | Social: amigos y transferencias | ✅ |
 | 5 | Salas multijugador en tiempo real | ⬜ |
 | 6 | Comunicación en sala (chat + voz + cámara) | ⬜ |
@@ -83,6 +84,20 @@ opcional para ver reacciones).
 **Cierre de cada fase:** `dart format` + `flutter analyze` + `flutter test` en verde, ficha en
 `docs/features/` y reglas en `docs/reglas-negocio/` creadas/actualizadas, README + CLAUDE.md al día, y
 un commit por fase.
+
+## Fase 3.5 — Conversión de cuenta anónima → permanente
+
+**Problema detectado:** quien entra en modo demo anónimo queda "atrapado": el `redirect` del router
+nunca lo devuelve a `/login`, así que **no hay forma de registrarse** sin perder el progreso (una cuenta
+anónima de Firebase no se recupera tras cerrar sesión).
+
+**Solución:** vinculación de credenciales (account linking) de Firebase Auth — convierte la cuenta
+anónima en permanente (email o Google) **conservando el mismo `uid`** (saldo, `inviteCode`, amigos e
+historial intactos), con un **bono de +500 créditos** la primera vez (idempotente, vía Cloud Function).
+Incluye incitación descartable a registrarse y advertencia al cerrar sesión siendo anónimo.
+
+Es una mejora autocontenida de la Fase 3 (auth); puede hacerse antes o en paralelo a la Fase 5. Diseño
+completo, casos de uso y casos borde en [`../features/conversion-cuenta.md`](../features/conversion-cuenta.md).
 
 ## Migración de la lógica del juego (JS → Dart)
 
