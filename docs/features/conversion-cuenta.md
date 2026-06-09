@@ -59,7 +59,10 @@ Reglas de créditos detalladas en
 ### CU-2 · Convertir con Google
 
 Igual que CU-1 pero con `linkWithCredential(GoogleAuthProvider.credential(...))` (o `linkWithPopup` en
-web). Tras vincular, `displayName`/`avatar` pueden actualizarse a los de la cuenta de Google.
+web). Tras vincular, `firebase_auth_repository.dart` **actualiza explícitamente** el doc de Firestore
+`users/{uid}` con `displayName` y `avatar` del `UserCredential` devuelto (los valores de la cuenta de
+Google), usando `user.displayName` y `user.photoURL`. `linkWithCredential` actualiza Firebase Auth pero
+**no** el doc de Firestore; sin este paso el demo conserva el nombre del demo indefinidamente.
 
 ### CU-3 · El email/Google ya pertenece a otra cuenta
 
@@ -127,12 +130,21 @@ Responsabilidades clave:
 - `i_auth_repository.dart` — añade `vincularConEmail({email, password})` y `vincularConGoogle()`. La UI
   solo conoce esta abstracción.
 - `firebase_auth_repository.dart` — implementa con `currentUser.linkWithCredential(...)` /
-  `linkWithPopup`; tras vincular, hace `await user.getIdToken(true)` para refrescar el token antes de
-  llamar a `claimConversionBonus` (sin este refresh el token sigue siendo anónimo y la Function falla).
+  `linkWithPopup`; tras vincular:
+  1. `await user.getIdToken(true)` — refresco obligatorio del token antes de invocar la Function
+     (sin él el token en caché sigue siendo anónimo y la Function rechaza la llamada).
+  2. Llama a `claimConversionBonus`.
+  3. En CU-2 (Google), actualiza `displayName` y `avatar` en Firestore con los valores de
+     `userCredential.user.displayName` / `photoURL`.
   **Atrapa `FirebaseAuthException` en la capa data** y lanza un `Exception` con mensaje en español
-  (lección de la Fase 4: la presentación no debe depender de tipos de Firebase —
-  ver `docs/errores-y-correcciones.md`). Distinguir `credential-already-in-use` (incluye
-  `error.credential` recuperable) de `email-already-in-use` (no la incluye) para el flujo de CU-3.
+  (lección de la Fase 4 — ver `docs/errores-y-correcciones.md`). Distinguir `credential-already-in-use`
+  (incluye `error.credential` recuperable para `signInWithCredential`) de `email-already-in-use` (no la
+  incluye; el usuario debe hacer `signInWithEmailAndPassword` manualmente) — ver CU-3.
+- `_fromDoc` en `firebase_auth_repository.dart` — usar **`user.isAnonymous` del token Auth** como
+  fuente de verdad, no el campo Firestore (`d['isAnonymous']`). El campo Firestore se actualiza
+  al final de `claimConversionBonus`; si `_fromDoc` lee Firestore primero, `perfilStream` emite
+  `isAnonymous: true` durante la ventana post-`linkWithCredential` / pre-Function y el banner de
+  conversión reaparece brevemente. Patrón correcto: `isAnonymous: user.isAnonymous`.
 - `pantalla_conversion.dart` — formulario (email, contraseña, nombre editable) + botón Google.
 - `banner_conversion.dart` — invitación descartable; se oculta si la cuenta ya es permanente.
 - `app_router.dart` — la ruta `/convertir` es alcanzable **mientras hay sesión**; el `redirect` actual
@@ -154,9 +166,14 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 - **`claimConversionBonus`** (callable, región `southamerica-east1`):
   - Valida `request.auth` y que el token **ya no sea anónimo**
     (`request.auth.token.firebase.sign_in_provider != 'anonymous'`) — impide cobrar antes de convertir.
-  - Lee `users/{uid}`; si `conversionBonusGranted == true` → no hace nada (idempotente).
-  - Si no, en una **transacción de Firestore**: `balance += 500`, `conversionBonusGranted = true`,
-    `isAnonymous = false`, y escribe la transacción `bonus_conversion`.
+  - Lee `users/{uid}` en Firestore; aplica tres guardas antes de acreditar:
+    1. `isAnonymous == true` en el doc — confirma que la cuenta **fue** anónima antes de la conversión.
+       Sin esta guarda, cualquier cuenta permanente sin el flag (incluidas todas las preexistentes)
+       podría llamar la Function y recibir +500 gratis, ya que `conversionBonusGranted` no existe en
+       su doc y `sign_in_provider` ya es no-anónimo.
+    2. `conversionBonusGranted != true` — idempotencia; si ya se pagó, no se vuelve a acreditar.
+    3. (implícita) La transacción escribe de forma atómica: `balance += 500`,
+       `conversionBonusGranted = true`, `isAnonymous = false`, y la tx `bonus_conversion`.
 
 > Nota: el trigger `onUserCreate` (bono de registro) **no** se dispara al vincular (el usuario ya
 > existía), por eso hace falta este callable dedicado en vez de reutilizar aquél.
@@ -166,8 +183,10 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 - **`provider-already-linked` / `credential-already-in-use`** → CU-3 (ofrecer iniciar sesión en la
   cuenta existente; advertir pérdida del demo).
 - **`email-already-in-use`** → mismo tratamiento que CU-3.
-- **`requires-recent-login`** → poco probable en una cuenta anónima recién creada; si ocurre, re-autenticar
-  y reintentar.
+- **`requires-recent-login`** → **fallo terminal** para cuentas anónimas. Re-autenticar no es viable:
+  no hay credenciales y `signInAnonymously()` crearía un `uid` nuevo, descartando todo el progreso.
+  La implementación debe tratar este error como terminal y mostrar: *"La sesión ha expirado y no se
+  puede conservar tu progreso. Cierra sesión e inicia de nuevo."* — nunca como un reintento silencioso.
 - **Vinculación OK pero el bono falla** → CU-4 (idempotencia; el cliente puede reintentar el cobro).
 - **Usuario ya permanente entra a `/convertir`** → el banner no se muestra y la pantalla informa que la
   cuenta ya está registrada.
