@@ -177,7 +177,9 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
       if (snap.data()?.conversionBonusGranted) return;          // (1) idempotencia — primero,
                                                                 //     para que reintentos post-pago
                                                                 //     sean no-op sin importar isAnonymous
-      if (!snap.data()?.isAnonymous) throw unauthenticated;     // (2) confirma origen anónimo
+      if (!snap.data()?.isAnonymous)                             // (2) confirma origen anónimo
+        throw new HttpsError('failed-precondition',             //     (no 'unauthenticated': el usuario
+          'La cuenta no fue originalmente anónima.');           //     SÍ está auth; es precondición de negocio)
       t.update(userRef, { balance: FieldValue.increment(500),
                           conversionBonusGranted: true,
                           isAnonymous: false });

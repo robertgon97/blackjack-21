@@ -35,7 +35,7 @@ service cloud.firestore {
       return request.resource.data.balance == resource.data.balance &&
         request.resource.data.lastAdReward == resource.data.lastAdReward &&
         request.resource.data.conversionBonusGranted == resource.data.get('conversionBonusGranted', false) &&
-        request.resource.data.isAnonymous == resource.data.get('isAnonymous', true);
+        request.resource.data.get('isAnonymous', true) == resource.data.get('isAnonymous', true);
     }
 
     // ---------- users ----------
