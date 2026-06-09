@@ -13,7 +13,7 @@ privilegios de admin).
 
 | Colección | Lectura | Escritura |
 |-----------|---------|-----------|
-| `users/{uid}` | El dueño + sus amigos aceptados | El dueño, **excepto `balance`, `lastAdReward` y `conversionBonusGranted`** (solo Functions) |
+| `users/{uid}` | El dueño + sus amigos aceptados | El dueño, **excepto `balance`, `lastAdReward`, `conversionBonusGranted` e `isAnonymous`** (solo Functions) |
 | `users/{uid}/transactions` | Solo el dueño | **Bloqueada** al cliente (solo Functions) |
 | `friendships/{uid}/contacts` | El dueño | El dueño (crear solicitud) y la Function que confirma |
 | `rooms/{roomId}` | Pública si `!private`; si no, solo miembros | Host y jugadores del room (campos permitidos) |

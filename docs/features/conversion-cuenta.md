@@ -188,8 +188,9 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
       t.update(userRef, { balance: FieldValue.increment(500),
                           conversionBonusGranted: true,
                           isAnonymous: false });
-      t.create(txRef, {           // ver campos en docs/arquitectura/modelo-datos.md
-        uid,
+      // txRef = userRef.collection('transactions').doc()  → users/{uid}/transactions/{auto-id}
+      t.create(userRef.collection('transactions').doc(), {  // ver campos en modelo-datos.md
+        uid,                                                // = request.auth.uid
         type: 'bonus_conversion',
         amount: 500,
         balance_after: (snap.data()?.balance ?? 0) + 500,
@@ -238,9 +239,10 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 2. **Deploy de `onUserCreate` actualizado** — que incluya la escritura de `isAnonymous` al crear el
    doc. A partir de aquí, los usuarios nuevos tendrán el campo desde la creación.
 3. **Deploy de `firestore.rules` de este PR** — ya son backward-compatible; desplegarlas no rompe
-   clientes Dart existentes (`isAnonymous` es opcional en la regla). A continuación, **actualizar el
-   cliente Dart** del workaround para incluir `isAnonymous` en el payload de creación; así las cuentas
-   creadas durante y después de la ventana de transición tendrán el campo correcto.
+   clientes Dart existentes (`isAnonymous` es opcional en la regla). **A la vez que el paso 2**,
+   **eliminar** el workaround de creación de perfil del cliente Dart: una vez `onUserCreate` está
+   desplegada, el trigger crea el doc; si el cliente también lo intenta, falla con *doc-ya-existente*.
+   Las cuentas creadas durante la ventana de transición quedan cubiertas por el re-run del paso 5.
 4. **Deploy de `claimConversionBonus`** — solo después de los pasos 1–3. Si se despliega antes,
    las cuentas anónimas creadas durante la ventana (pasos 1–2) recibirán `failed-precondition`.
 5. **Re-ejecutar el script de migración** — cubre las cuentas anónimas creadas vía workaround
