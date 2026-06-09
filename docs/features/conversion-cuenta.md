@@ -48,6 +48,9 @@ Reglas de créditos detalladas en
 3. Rellena email + contraseña (el nombre ya lo tiene del demo; editable).
 4. `vincularConEmail` → `currentUser.linkWithCredential(EmailAuthProvider.credential(...))`.
 5. Firebase actualiza el mismo usuario: `isAnonymous` del token pasa a `false`, mismo `uid`.
+   **Importante:** el ID token en caché no se refresca de forma síncrona. Antes del paso 6 hay que
+   llamar `await user.getIdToken(true)` para que el token enviado a la Function ya no sea anónimo;
+   sin este refresh, la Function rechazará la llamada aunque la vinculación haya sido exitosa.
 6. El cliente invoca la Function `claimConversionBonus`; ésta valida y acredita +500, marca
    `conversionBonusGranted: true`, pone `isAnonymous: false` y escribe una transacción
    `bonus_conversion`.
@@ -60,7 +63,10 @@ web). Tras vincular, `displayName`/`avatar` pueden actualizarse a los de la cuen
 
 ### CU-3 · El email/Google ya pertenece a otra cuenta
 
-- Firebase lanza `credential-already-in-use` (o `email-already-in-use`).
+- Firebase lanza `credential-already-in-use` (Google/OAuth) o `email-already-in-use` (email+contraseña).
+  Son errores distintos: en `credential-already-in-use` el objeto error incluye `error.credential`
+  (recuperable para hacer `signInWithCredential` directo); en `email-already-in-use` no hay credential
+  adjunta y el usuario debe hacer `signInWithEmailAndPassword` con su contraseña.
 - Se muestra un diálogo: *"Ese email ya tiene una cuenta. Puedes iniciar sesión en ella, pero perderás
   el progreso de esta sesión de demo (saldo, amigos)."* con botones **Iniciar sesión** / **Cancelar**.
 - Si acepta: se cierra la sesión anónima y se entra a la cuenta existente (su saldo real). El demo se
@@ -121,9 +127,12 @@ Responsabilidades clave:
 - `i_auth_repository.dart` — añade `vincularConEmail({email, password})` y `vincularConGoogle()`. La UI
   solo conoce esta abstracción.
 - `firebase_auth_repository.dart` — implementa con `currentUser.linkWithCredential(...)` /
-  `linkWithPopup`; tras vincular, llama a `claimConversionBonus`. **Atrapa `FirebaseAuthException` en la
-  capa data** y lanza un `Exception` con mensaje en español (lección de la Fase 4: la presentación no
-  debe depender de tipos de Firebase — ver `docs/errores-y-correcciones.md`).
+  `linkWithPopup`; tras vincular, hace `await user.getIdToken(true)` para refrescar el token antes de
+  llamar a `claimConversionBonus` (sin este refresh el token sigue siendo anónimo y la Function falla).
+  **Atrapa `FirebaseAuthException` en la capa data** y lanza un `Exception` con mensaje en español
+  (lección de la Fase 4: la presentación no debe depender de tipos de Firebase —
+  ver `docs/errores-y-correcciones.md`). Distinguir `credential-already-in-use` (incluye
+  `error.credential` recuperable) de `email-already-in-use` (no la incluye) para el flujo de CU-3.
 - `pantalla_conversion.dart` — formulario (email, contraseña, nombre editable) + botón Google.
 - `banner_conversion.dart` — invitación descartable; se oculta si la cuenta ya es permanente.
 - `app_router.dart` — la ruta `/convertir` es alcanzable **mientras hay sesión**; el `redirect` actual
