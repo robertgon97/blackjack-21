@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/pantalla_login.dart';
+import '../../features/friends/domain/contacto.dart';
+import '../../features/friends/presentation/friends_page.dart';
+import '../../features/friends/presentation/transfer_page.dart';
 import '../../features/game/presentation/pantalla_juego.dart';
 import '../../features/wallet/presentation/historial_page.dart';
 
@@ -32,6 +35,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'historial',
             builder: (_, __) => const HistorialPage(),
+          ),
+          GoRoute(
+            path: 'friends',
+            builder: (_, __) => const FriendsPage(),
+            routes: [
+              GoRoute(
+                path: 'transfer',
+                builder: (_, state) =>
+                    TransferPage(contacto: state.extra! as Contacto),
+              ),
+            ],
           ),
         ],
       ),

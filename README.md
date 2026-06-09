@@ -11,7 +11,7 @@ Disponible en **Android**, **Web**, **Windows** e **iOS**.
 | 1 | Lógica pura (domain) + 32 tests | ✅ Completa |
 | 2 | Juego solo en Flutter (UI, 4 temas) | ✅ Completa |
 | 3 | Auth + perfil + saldo persistente | ✅ Completa |
-| 4 | Social: amigos y transferencias | 🔲 Pendiente |
+| 4 | Social: amigos y transferencias | ✅ Completa |
 | 5 | Salas multijugador en tiempo real | 🔲 Pendiente |
 | 6 | Comunicación en sala (chat + voz + cámara) | 🔲 Pendiente |
 | 7 | Monetización y pulido | 🔲 Pendiente |

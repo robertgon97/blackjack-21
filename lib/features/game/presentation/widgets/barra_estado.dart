@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/tema_provider.dart';
 import '../../../../core/theme/temas.dart';
@@ -75,6 +76,11 @@ class BarraEstado extends ConsumerWidget {
                 const Icon(Icons.arrow_drop_down, color: Colors.white),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: 'Amigos',
+            icon: const Icon(Icons.people, color: Colors.white),
+            onPressed: () => context.push('/friends'),
           ),
           IconButton(
             tooltip: 'Ajustes',

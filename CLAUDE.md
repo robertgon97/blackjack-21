@@ -168,7 +168,7 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 - Riverpod providers para las features que faltan (rooms, comms, profile…)
 - `freezed` para los modelos (hoy son inmutables con `copyWith` a mano)
 - Fichas de `docs/features/` para las features restantes (rooms, comms, profile…)
-- **Fase 4 (siguiente):** social — amigos y transferencias (ver `docs/reglas-negocio/social.md`)
+- **Fase 5 (siguiente):** salas multijugador en tiempo real (ver `docs/reglas-negocio/salas-y-multijugador.md`)
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
@@ -178,3 +178,8 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > historial de movimientos y `go_router` con guard de sesión (`core/router/app_router.dart`).
 > Repos tras interfaz: `features/auth/`, `features/wallet/`. Ficha:
 > [`docs/features/auth-y-saldo.md`](docs/features/auth-y-saldo.md).
+>
+> **Hecho en Fase 4:** sistema de amigos por código de invitación, gestión de solicitudes
+> (enviar/aceptar/rechazar/cancelar), transferencias atómicas entre amigos vía Cloud Function
+> `transferCredits`. Repos: `features/friends/`. Functions: `functions/src/transfers.ts`.
+> Ficha: [`docs/features/social.md`](docs/features/social.md).

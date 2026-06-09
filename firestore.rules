@@ -8,8 +8,7 @@ rules_version = '2';
 //  estado del juego (games) ni las transacciones. Eso lo hacen
 //  las Cloud Functions con el Admin SDK (que ignora estas reglas).
 //
-//  NOTA: versión inicial; se refina en la Fase 3 (auth) y la
-//  Fase 5 (salas). Por defecto, todo lo no contemplado se niega.
+//  NOTA: versión actualizada en Fase 4 (social).
 // ============================================================
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -23,10 +22,12 @@ service cloud.firestore {
       return autenticado() && request.auth.uid == uid;
     }
 
-    // ¿El usuario actual es amigo aceptado de `uid`?
+    // ¿El usuario actual es amigo ACEPTADO de `uid`?
     function esAmigoDe(uid) {
+      let ref = /databases/$(database)/documents/friendships/$(uid)/contacts/$(request.auth.uid);
       return autenticado() &&
-        exists(/databases/$(database)/documents/friendships/$(uid)/contacts/$(request.auth.uid));
+        exists(ref) &&
+        get(ref).data.status == 'accepted';
     }
 
     // ¿La escritura mantiene intactos los campos que solo las Functions pueden tocar?
@@ -41,7 +42,10 @@ service cloud.firestore {
       allow read: if esDueno(uid) || esAmigoDe(uid);
 
       // La creación del perfil y el saldo inicial los hace la Function onUserCreate.
-      allow create: if false;
+      // En Fase 3/4, el cliente crea el perfil directamente (workaround hasta que
+      // esté habilitado el plan Blaze y desplegada la Function).
+      // Se fuerza balance == 1000 para evitar que el cliente fije un saldo arbitrario.
+      allow create: if esDueno(uid) && request.resource.data.balance == 1000;
 
       // El dueño actualiza su perfil, pero NO balance ni lastAdReward.
       allow update: if esDueno(uid) && noTocaCamposProtegidos();
@@ -55,12 +59,42 @@ service cloud.firestore {
       }
     }
 
+    // ---------- invite_codes ----------
+    // Lookup-table de códigos de invitación. Cualquier usuario autenticado puede
+    // buscar un código; solo el dueño puede crear el suyo.
+    match /invite_codes/{code} {
+      allow read: if autenticado();
+      allow create: if autenticado() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     // ---------- friendships ----------
+    // Modelo bilateral: friendships/{uid}/contacts/{friendUid}.
+    // Cada usuario gestiona su propio lado; las reglas extendidas permiten
+    // que el otro usuario escriba en operaciones bilaterales (batch) desde el cliente.
     match /friendships/{uid}/contacts/{friendUid} {
-      // El dueño gestiona su lista de contactos. La confirmación bilateral
-      // (escribir en el lado del otro) la hace una Function.
       allow read: if esDueno(uid);
-      allow create, update, delete: if esDueno(uid);
+
+      // Crear: el dueño gestiona su lista, O el friendUid añade una solicitud pendiente
+      // en el lado del uid (necesario para el batch write de enviarSolicitud).
+      allow create: if esDueno(uid) ||
+        (autenticado() && request.auth.uid == friendUid &&
+         request.resource.data.status == 'pending' &&
+         request.resource.data.initiatedBy == request.auth.uid);
+
+      // Actualizar: el dueño actualiza su lado, O el friendUid acepta una solicitud
+      // que él NO inició (es decir, B acepta la solicitud de A en el lado de A).
+      // affectedKeys garantiza que solo se modifiquen status y since, no otros campos.
+      allow update: if esDueno(uid) ||
+        (autenticado() && request.auth.uid == friendUid &&
+         resource.data.status == 'pending' &&
+         request.resource.data.status == 'accepted' &&
+         resource.data.initiatedBy != request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'since']));
+
+      // Eliminar: cualquiera de los dos puede borrar (rechazar / cancelar / romper).
+      allow delete: if esDueno(uid) ||
+        (autenticado() && request.auth.uid == friendUid);
     }
 
     // ---------- rooms ----------
