@@ -176,7 +176,11 @@ class _PanelAjustesState extends ConsumerState<PanelAjustes> {
       }
     }
 
-    await ref.read(authRepositoryProvider).salir();
+    try {
+      await ref.read(authRepositoryProvider).salir();
+    } catch (e) {
+      debugPrint('No se pudo cerrar sesión: $e');
+    }
     // El redirect del router lleva a /login al desaparecer el perfil.
     if (mounted) Navigator.of(context).pop();
   }

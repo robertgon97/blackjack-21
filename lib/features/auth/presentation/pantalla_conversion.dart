@@ -162,7 +162,9 @@ class _PantallaConversionState extends ConsumerState<PantallaConversion> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email),
                     ),
-                    validator: (v) => (v == null || !v.contains('@'))
+                    validator: (v) => (v == null ||
+                            !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                .hasMatch(v.trim()))
                         ? 'Email inválido'
                         : null,
                   ),

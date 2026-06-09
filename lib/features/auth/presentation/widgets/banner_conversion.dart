@@ -7,20 +7,14 @@ import '../auth_provider.dart';
 /// Banner descartable que incita a convertir la cuenta demo en permanente.
 /// Solo se muestra mientras `perfil.isAnonymous == true` y el usuario no lo
 /// haya descartado en esta sesión. Nunca bloquea el juego.
-class BannerConversion extends ConsumerStatefulWidget {
+class BannerConversion extends ConsumerWidget {
   const BannerConversion({super.key});
 
   @override
-  ConsumerState<BannerConversion> createState() => _BannerConversionState();
-}
-
-class _BannerConversionState extends ConsumerState<BannerConversion> {
-  bool _descartado = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final perfil = ref.watch(perfilStreamProvider).valueOrNull;
-    if (_descartado || perfil == null || !perfil.isAnonymous) {
+    final descartado = ref.watch(bannerConversionDescartadoProvider);
+    if (descartado || perfil == null || !perfil.isAnonymous) {
       return const SizedBox.shrink();
     }
 
@@ -33,7 +27,9 @@ class _BannerConversionState extends ConsumerState<BannerConversion> {
       leading: Icon(Icons.account_circle, color: cs.onSecondaryContainer),
       actions: [
         TextButton(
-          onPressed: () => setState(() => _descartado = true),
+          onPressed: () => ref
+              .read(bannerConversionDescartadoProvider.notifier)
+              .state = true,
           child: const Text('Ahora no'),
         ),
         FilledButton(

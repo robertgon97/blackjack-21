@@ -151,6 +151,12 @@ class FirebaseAuthRepository implements IAuthRepository {
       cred = await user.linkWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       throw Exception(_mensajeVinculacion(e.code));
+    } catch (e) {
+      // google_sign_in puede lanzar PlatformException (Play Services caído, sin
+      // red, OAuth mal configurado) que no es FirebaseAuthException. La
+      // cancelación del usuario ya se relanza con su propio mensaje.
+      if (e.toString().contains('cancelada')) rethrow;
+      throw Exception('No se pudo conectar con Google. Intenta de nuevo.');
     }
     // Cuenta ya permanente. Se copian nombre/avatar de Google al perfil dentro
     // de _finalizarConversion (que no relanza si la escritura falla).
