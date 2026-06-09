@@ -3,8 +3,8 @@
 > **Estado: IMPLEMENTADO** (Fase 3.5). Código en `features/auth/` (repo + `pantalla_conversion`,
 > `banner_conversion`), ruta `/convertir` en `core/router/`, Function `claimConversionBonus` en
 > `functions/src/conversion.ts` y advertencia de cierre de sesión (CU-5) en el panel de ajustes del
-> juego. **Pendiente de despliegue:** ver «Checklist de deploy» más abajo (Blaze + deploy de la
-> Function y las rules).
+> juego. **Despliegue automático al mergear a main** vía `deploy-firebase.yml` (jobs Firestore +
+> Functions + Hosting; Blaze ya activo) — sin pasos manuales.
 
 ## Propósito
 
@@ -236,25 +236,19 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
   lea el `sign_in_provider` de Firebase Auth de cada usuario y escriba `isAnonymous: true` en los docs
   de quienes sean `anonymous`.
 
-## Checklist de deploy (orden obligatorio)
+## Despliegue
 
-> ⚠️ El orden importa. Saltarse o invertir los pasos bloquea a usuarios reales.
+El despliegue es **automático al mergear a `main`**: el workflow `deploy-firebase.yml` corre tres
+jobs en paralelo — Firestore (reglas + índices), Cloud Functions (`claimConversionBonus`) y Hosting
+(Flutter web). Blaze ya está activo y `FIREBASE_SERVICE_ACCOUNT` está en los secrets del repo. **No
+hay pasos manuales.**
 
-1. **Script de migración Admin SDK** — antes de cualquier deploy, escribir `isAnonymous: true` en
-   los docs de todos los usuarios cuyo `sign_in_provider` en Firebase Auth sea `anonymous` y que aún
-   no tengan el campo. El script debe ser **idempotente** (no sobreescribir `isAnonymous: false` en
-   cuentas ya convertidas) y ejecutarse en **lotes** para no agotar cuotas de lectura.
-2. **Deploy de `onUserCreate` actualizado** — que incluya la escritura de `isAnonymous` al crear el
-   doc. A partir de aquí, los usuarios nuevos tendrán el campo desde la creación.
-3. **Deploy de `firestore.rules` de este PR** — ya son backward-compatible; desplegarlas no rompe
-   clientes Dart existentes (`isAnonymous` es opcional en la regla). **A la vez que el paso 2**,
-   **eliminar** el workaround de creación de perfil del cliente Dart: una vez `onUserCreate` está
-   desplegada, el trigger crea el doc; si el cliente también lo intenta, falla con *doc-ya-existente*.
-   Las cuentas creadas durante la ventana de transición quedan cubiertas por el re-run del paso 5.
-4. **Deploy de `claimConversionBonus`** — solo después de los pasos 1–3. Si se despliega antes,
-   las cuentas anónimas creadas durante la ventana (pasos 1–2) recibirán `failed-precondition`.
-5. **Re-ejecutar el script de migración** — cubre las cuentas anónimas creadas vía workaround
-   entre los pasos 2 y 3 (ventana en que el cliente todavía no escribía `isAnonymous`).
+> **Sobre `onUserCreate` y la migración:** en esta implementación `onUserCreate` **no existe** como
+> Cloud Function; el perfil lo crea el cliente (`firebase_auth_repository._fetchOCrearPerfil`), que ya
+> escribe `isAnonymous: user.isAnonymous` desde la Fase 3. Por tanto **toda cuenta anónima creada por
+> la app ya tiene el campo** y cumple la guarda (2) de `claimConversionBonus`. Solo necesitarían un
+> script de migración (Admin SDK, idempotente, en lotes) las cuentas anónimas **preexistentes** sin el
+> campo, si las hubiera en producción — improbable, pero verificable antes de anunciar la feature.
 
 ## Cómo probarlo
 
