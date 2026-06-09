@@ -167,8 +167,11 @@ class _PanelAjustesState extends ConsumerState<PanelAjustes> {
         return;
       }
       if (accion == _AccionCierre.crearCuenta) {
+        // Capturar el router ANTES del pop: tras cerrar el panel este widget
+        // queda desmontado (`mounted == false`) y `context` ya no sirve.
+        final router = GoRouter.of(context);
         Navigator.of(context).pop(); // cierra el panel de ajustes
-        if (mounted) context.go('/convertir');
+        router.go('/convertir');
         return;
       }
     }

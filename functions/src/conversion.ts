@@ -59,7 +59,9 @@ export const claimConversionBonus = onCall(
         );
       }
 
-      const balance = (data.balance as number) ?? 0;
+      // Validación en runtime: `as number` no protege si el campo viniera con
+      // un tipo inesperado (un string no activaría `?? 0` y daría NaN al sumar).
+      const balance = typeof data.balance === 'number' ? data.balance : 0;
       const balanceAfter = balance + 500;
       const now = FieldValue.serverTimestamp();
 
