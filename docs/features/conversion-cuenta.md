@@ -146,7 +146,10 @@ Responsabilidades clave:
   fuente de verdad, no el campo Firestore (`d['isAnonymous']`). El campo Firestore se actualiza
   al final de `claimConversionBonus`; si `_fromDoc` lee Firestore primero, `perfilStream` emite
   `isAnonymous: true` durante la ventana post-`linkWithCredential` / pre-Function y el banner de
-  conversión reaparece brevemente. Patrón correcto: `isAnonymous: user.isAnonymous`.
+  conversión reaparece brevemente. Patrón correcto: cambiar la firma a
+  `_fromDoc(DocumentSnapshot snap, User user)` y pasarla desde el punto donde se combina el stream
+  de Auth con el de Firestore — mantiene `_fromDoc` pura y testeable con mocks (evita
+  `FirebaseAuth.instance.currentUser` como dependencia implícita).
 - `pantalla_conversion.dart` — formulario (email, contraseña, nombre editable) + botón Google.
 - `banner_conversion.dart` — invitación descartable; se oculta si la cuenta ya es permanente.
 - `app_router.dart` — la ruta `/convertir` es alcanzable **mientras hay sesión**; el `redirect` actual
@@ -234,11 +237,13 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
    cuentas ya convertidas) y ejecutarse en **lotes** para no agotar cuotas de lectura.
 2. **Deploy de `onUserCreate` actualizado** — que incluya la escritura de `isAnonymous` al crear el
    doc. A partir de aquí, los usuarios nuevos tendrán el campo desde la creación.
-3. **Deploy de `claimConversionBonus`** — solo después de que el script haya corrido; si se despliega
-   antes, los usuarios anónimos preexistentes recibirán `failed-precondition` al intentar cobrar.
-4. **Deploy de `firestore.rules`** — junto con el código Dart actualizado del workaround que incluya
-   `isAnonymous` en el payload de creación (para que la nueva regla de `allow create` no bloquee
-   el registro de usuarios anónimos).
+3. **Deploy de `firestore.rules` + código Dart del workaround** — actualizar el cliente Dart para
+   incluir `isAnonymous` en el payload de creación antes de desplegar la Function; así las cuentas
+   creadas durante y después de la ventana de transición tendrán el campo correcto.
+4. **Deploy de `claimConversionBonus`** — solo después de los pasos 1–3. Si se despliega antes,
+   las cuentas anónimas creadas durante la ventana (pasos 1–2) recibirán `failed-precondition`.
+5. **Re-ejecutar el script de migración** — cubre las cuentas anónimas creadas vía workaround
+   entre los pasos 2 y 3 (ventana en que el cliente todavía no escribía `isAnonymous`).
 
 ## Cómo probarlo
 
