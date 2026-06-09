@@ -8,6 +8,7 @@ enum TipoTransaccion {
   adReward,
   bonusRegistro,
   bonusInvitacion,
+  bonusConversion,
 }
 
 /// Un movimiento de créditos del historial del usuario.
@@ -42,7 +43,8 @@ class Transaccion {
         TipoTransaccion.transferIn ||
         TipoTransaccion.adReward ||
         TipoTransaccion.bonusRegistro ||
-        TipoTransaccion.bonusInvitacion =>
+        TipoTransaccion.bonusInvitacion ||
+        TipoTransaccion.bonusConversion =>
           true,
         _ => false,
       };

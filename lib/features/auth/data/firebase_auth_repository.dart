@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../domain/i_auth_repository.dart';
@@ -26,7 +27,10 @@ class FirebaseAuthRepository implements IAuthRepository {
 
   @override
   Stream<PerfilUsuario?> get perfilStream {
-    return _auth.authStateChanges().asyncMap((user) async {
+    // userChanges() (no authStateChanges()) emite también en cambios in-place
+    // del usuario —como linkWithCredential / refresco de token— de modo que la
+    // UI deja de ver el perfil anónimo justo tras convertir la cuenta.
+    return _auth.userChanges().asyncMap((user) async {
       if (user == null) return null;
       return _fetchPerfil(user);
     });
@@ -104,28 +108,32 @@ class FirebaseAuthRepository implements IAuthRepository {
   }) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('No hay sesión activa para convertir.');
+    final UserCredential cred;
     try {
       final credential = EmailAuthProvider.credential(
         email: email,
         password: password,
       );
-      final cred = await user.linkWithCredential(credential);
+      cred = await user.linkWithCredential(credential);
       await cred.user!.updateDisplayName(displayName);
-      // El nombre editado en el formulario reemplaza al del demo.
-      await _db.collection('users').doc(user.uid).update({
-        'displayName': displayName,
-        'email': email,
-      });
-      return _finalizarConversion(cred.user!);
     } on FirebaseAuthException catch (e) {
+      // Solo los errores de la vinculación Auth se propagan a la UI.
       throw Exception(_mensajeVinculacion(e.code));
     }
+    // A partir de aquí la cuenta YA es permanente: nada debe bloquear al
+    // usuario ni propagar un error que rompa el flujo de reintento.
+    return _finalizarConversion(
+      cred.user!,
+      displayName: displayName,
+      email: email,
+    );
   }
 
   @override
   Future<PerfilUsuario> vincularConGoogle() async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('No hay sesión activa para convertir.');
+    final UserCredential cred;
     try {
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
@@ -136,24 +144,19 @@ class FirebaseAuthRepository implements IAuthRepository {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final cred = await user.linkWithCredential(credential);
-      final linked = cred.user!;
-      // linkWithCredential actualiza Firebase Auth pero NO el doc de Firestore;
-      // se copia el nombre/avatar de Google al perfil. Es fire-and-forget: si
-      // falla, la conversión ya fue exitosa y el usuario puede editarlo después.
-      try {
-        await _db.collection('users').doc(user.uid).update({
-          'displayName': linked.displayName ?? 'Jugador',
-          'email': linked.email ?? '',
-          if (linked.photoURL != null) 'avatar': linked.photoURL,
-        });
-      } catch (_) {
-        // Ignorado a propósito (ver comentario arriba).
-      }
-      return _finalizarConversion(linked);
+      cred = await user.linkWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       throw Exception(_mensajeVinculacion(e.code));
     }
+    // Cuenta ya permanente. Se copian nombre/avatar de Google al perfil dentro
+    // de _finalizarConversion (que no relanza si la escritura falla).
+    final linked = cred.user!;
+    return _finalizarConversion(
+      linked,
+      displayName: linked.displayName ?? 'Jugador',
+      email: linked.email ?? '',
+      avatar: linked.photoURL,
+    );
   }
 
   @override
@@ -164,25 +167,56 @@ class FirebaseAuthRepository implements IAuthRepository {
 
   // ── helpers ──────────────────────────────────────────────────────────────
 
-  /// Tras vincular: refresca el token (para que ya no sea anónimo), invoca la
-  /// Function que acredita el bono y devuelve el perfil actualizado.
-  Future<PerfilUsuario> _finalizarConversion(User user) async {
-    // Refresco obligatorio: sin esto el token en caché sigue siendo anónimo y
-    // la Function rechaza la llamada con failed-precondition.
-    await user.getIdToken(true);
+  /// Cierra la conversión tras una vinculación Auth exitosa: actualiza el perfil
+  /// en Firestore y devuelve el perfil ya convertido. El bono lo reclama
+  /// [_fetchPerfil] al detectar el estado «convertido pero sin bono», de modo
+  /// que haya un único punto de reclamo (idempotente) y nada bloquee al usuario.
+  Future<PerfilUsuario> _finalizarConversion(
+    User user, {
+    String? displayName,
+    String? email,
+    String? avatar,
+  }) async {
+    // linkWithCredential no toca el doc de Firestore; copiamos nombre/email/
+    // avatar. Fire-and-forget: si falla, la conversión ya fue exitosa.
     try {
-      await _functions.httpsCallable('claimConversionBonus').call<void>();
-    } on FirebaseFunctionsException catch (e) {
-      // La conversión Auth ya fue exitosa; si el bono falla el cliente puede
-      // reintentar (la Function es idempotente). No bloqueamos al usuario.
-      throw Exception(_mensajeBono(e.code, e.message));
+      await _db.collection('users').doc(user.uid).update({
+        if (displayName != null) 'displayName': displayName,
+        if (email != null) 'email': email,
+        if (avatar != null) 'avatar': avatar,
+      });
+    } catch (e) {
+      debugPrint('Conversión: no se pudo actualizar el perfil: $e');
     }
     return _fetchPerfil(user);
+  }
+
+  /// Refresca el token (para que deje de ser anónimo) y reclama el bono de
+  /// conversión. La Function es idempotente y nunca relanza: si falla, el bono
+  /// queda pendiente y se reintenta en el próximo [_fetchPerfil].
+  Future<void> _reclamarBonoConversion(User user) async {
+    try {
+      await user.getIdToken(true);
+      await _functions.httpsCallable('claimConversionBonus').call<void>();
+    } catch (e) {
+      debugPrint('Conversión: bono pendiente, se reintentará: $e');
+    }
   }
 
   Future<PerfilUsuario> _fetchPerfil(User user) async {
     final doc = await _db.collection('users').doc(user.uid).get();
     if (!doc.exists) return _fetchOCrearPerfil(user);
+
+    // Estado «convertido pero sin bono»: el token ya no es anónimo pero el doc
+    // sigue marcado como anónimo (la Function es quien lo pone en false al
+    // pagar). Se reintenta el bono y se relee el perfil ya actualizado.
+    final docAnonimo = (doc.data()?['isAnonymous'] as bool?) ?? false;
+    if (!user.isAnonymous && docAnonimo) {
+      await _reclamarBonoConversion(user);
+      final fresco = await _db.collection('users').doc(user.uid).get();
+      return _fromDoc(fresco, user);
+    }
+
     return _fromDoc(doc, user);
   }
 
@@ -265,13 +299,5 @@ class FirebaseAuthRepository implements IAuthRepository {
               'conversión ahora. Tu progreso del demo sigue activo; puedes seguir '
               'jugando.',
         _ => 'No se pudo crear la cuenta. Intenta de nuevo.',
-      };
-
-  String _mensajeBono(String? code, String? message) => switch (code) {
-        'failed-precondition' =>
-          'La cuenta no es elegible para el bono de conversión.',
-        'not-found' => 'Perfil de usuario no encontrado.',
-        _ =>
-          'No se pudo acreditar el bono: ${message ?? code ?? 'desconocido'}',
       };
 }

@@ -120,6 +120,7 @@ class _FilaTransaccion extends StatelessWidget {
         TipoTransaccion.adReward => '📺',
         TipoTransaccion.bonusRegistro => '🎁',
         TipoTransaccion.bonusInvitacion => '👥',
+        TipoTransaccion.bonusConversion => '⭐',
       };
 
   String _formatFecha(DateTime d) {
