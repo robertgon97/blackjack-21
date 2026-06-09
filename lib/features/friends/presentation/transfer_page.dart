@@ -1,4 +1,3 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -145,21 +144,9 @@ class _TransferPageState extends ConsumerState<TransferPage> {
         ),
       );
       Navigator.of(context).pop();
-    } on FirebaseFunctionsException catch (e) {
-      setState(() {
-        _error = switch (e.code) {
-          'failed-precondition' => 'Saldo insuficiente.',
-          'resource-exhausted' =>
-            'Límite de 10 transferencias por hora alcanzado.',
-          'invalid-argument' => e.message ?? 'Datos inválidos.',
-          'not-found' => 'Usuario no encontrado.',
-          _ => 'Error: ${e.message}',
-        };
-        _enviando = false;
-      });
     } catch (e) {
       setState(() {
-        _error = 'Error inesperado: $e';
+        _error = e.toString().replaceFirst('Exception: ', '');
         _enviando = false;
       });
     }

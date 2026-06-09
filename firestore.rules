@@ -84,11 +84,13 @@ service cloud.firestore {
 
       // Actualizar: el dueño actualiza su lado, O el friendUid acepta una solicitud
       // que él NO inició (es decir, B acepta la solicitud de A en el lado de A).
+      // affectedKeys garantiza que solo se modifiquen status y since, no otros campos.
       allow update: if esDueno(uid) ||
         (autenticado() && request.auth.uid == friendUid &&
          resource.data.status == 'pending' &&
          request.resource.data.status == 'accepted' &&
-         resource.data.initiatedBy != request.auth.uid);
+         resource.data.initiatedBy != request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'since']));
 
       // Eliminar: cualquiera de los dos puede borrar (rechazar / cancelar / romper).
       allow delete: if esDueno(uid) ||

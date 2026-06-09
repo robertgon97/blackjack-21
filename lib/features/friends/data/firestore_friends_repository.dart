@@ -108,13 +108,28 @@ class FirestoreFriendsRepository implements IFriendsRepository {
     required String toUid,
     required int monto,
   }) async {
-    await _functions.httpsCallable('transferCredits').call<void>({
-      'toUid': toUid,
-      'monto': monto,
-    });
+    try {
+      await _functions.httpsCallable('transferCredits').call<void>({
+        'toUid': toUid,
+        'monto': monto,
+      });
+    } on FirebaseFunctionsException catch (e) {
+      // Se traduce aquí para que la capa de presentación no dependa del paquete
+      // cloud_functions ni conozca los códigos de error de Firebase.
+      throw Exception(_mensajeTransferencia(e.code, e.message));
+    }
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
+
+  String _mensajeTransferencia(String? code, String? message) => switch (code) {
+        'failed-precondition' => 'Saldo insuficiente.',
+        'resource-exhausted' =>
+          'Límite de 10 transferencias por hora alcanzado.',
+        'invalid-argument' => message ?? 'Datos inválidos.',
+        'not-found' => 'Usuario no encontrado.',
+        _ => 'Error al transferir: ${message ?? code ?? 'desconocido'}',
+      };
 
   Contacto _docAContacto(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data();
