@@ -51,6 +51,7 @@ service cloud.firestore {
       // NOTA: este workaround debe eliminarse cuando onUserCreate esté desplegada.
       allow create: if esDueno(uid)
         && request.resource.data.balance == 1000
+        && !request.resource.data.keys().hasAny(['conversionBonusGranted'])
         && (!request.resource.data.keys().hasAny(['isAnonymous'])
              || request.resource.data.isAnonymous
                   == (request.auth.token.firebase.sign_in_provider == 'anonymous'));

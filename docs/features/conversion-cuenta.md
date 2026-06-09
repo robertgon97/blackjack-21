@@ -192,7 +192,7 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
         uid,
         type: 'bonus_conversion',
         amount: 500,
-        balance_after: snap.data()!.balance + 500,
+        balance_after: (snap.data()?.balance ?? 0) + 500,
         description: 'Bono por convertir cuenta demo a permanente',
         createdAt: FieldValue.serverTimestamp(),
       });
@@ -237,8 +237,9 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
    cuentas ya convertidas) y ejecutarse en **lotes** para no agotar cuotas de lectura.
 2. **Deploy de `onUserCreate` actualizado** — que incluya la escritura de `isAnonymous` al crear el
    doc. A partir de aquí, los usuarios nuevos tendrán el campo desde la creación.
-3. **Deploy de `firestore.rules` + código Dart del workaround** — actualizar el cliente Dart para
-   incluir `isAnonymous` en el payload de creación antes de desplegar la Function; así las cuentas
+3. **Deploy de `firestore.rules` de este PR** — ya son backward-compatible; desplegarlas no rompe
+   clientes Dart existentes (`isAnonymous` es opcional en la regla). A continuación, **actualizar el
+   cliente Dart** del workaround para incluir `isAnonymous` en el payload de creación; así las cuentas
    creadas durante y después de la ventana de transición tendrán el campo correcto.
 4. **Deploy de `claimConversionBonus`** — solo después de los pasos 1–3. Si se despliega antes,
    las cuentas anónimas creadas durante la ventana (pasos 1–2) recibirán `failed-precondition`.
