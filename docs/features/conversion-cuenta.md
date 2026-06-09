@@ -135,7 +135,9 @@ Responsabilidades clave:
      (sin él el token en caché sigue siendo anónimo y la Function rechaza la llamada).
   2. Llama a `claimConversionBonus`.
   3. En CU-2 (Google), actualiza `displayName` y `avatar` en Firestore con los valores de
-     `userCredential.user.displayName` / `photoURL`.
+     `userCredential.user.displayName` / `photoURL`. Si este paso falla, **no** se propaga el error
+     hacia la presentación (la conversión fue exitosa); se loguea y se ignora — el usuario puede
+     actualizar su perfil después desde la pantalla de perfil.
   **Atrapa `FirebaseAuthException` en la capa data** y lanza un `Exception` con mensaje en español
   (lección de la Fase 4 — ver `docs/errores-y-correcciones.md`). Distinguir `credential-already-in-use`
   (incluye `error.credential` recuperable para `signInWithCredential`) de `email-already-in-use` (no la
@@ -166,14 +168,24 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 - **`claimConversionBonus`** (callable, región `southamerica-east1`):
   - Valida `request.auth` y que el token **ya no sea anónimo**
     (`request.auth.token.firebase.sign_in_provider != 'anonymous'`) — impide cobrar antes de convertir.
-  - Lee `users/{uid}` en Firestore; aplica tres guardas antes de acreditar:
-    1. `isAnonymous == true` en el doc — confirma que la cuenta **fue** anónima antes de la conversión.
-       Sin esta guarda, cualquier cuenta permanente sin el flag (incluidas todas las preexistentes)
-       podría llamar la Function y recibir +500 gratis, ya que `conversionBonusGranted` no existe en
-       su doc y `sign_in_provider` ya es no-anónimo.
-    2. `conversionBonusGranted != true` — idempotencia; si ya se pagó, no se vuelve a acreditar.
-    3. (implícita) La transacción escribe de forma atómica: `balance += 500`,
-       `conversionBonusGranted = true`, `isAnonymous = false`, y la tx `bonus_conversion`.
+  - Toda la lógica de guardas y escritura ocurre **dentro de `runTransaction`** usando el snapshot
+    transaccional (`t.get(userRef)`), para evitar la carrera TOCTOU donde dos llamadas concurrentes
+    pasen ambos checks antes de que ninguna haya escrito:
+    ```ts
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);                        // lectura DENTRO de la tx
+      if (snap.data()?.conversionBonusGranted) return;          // (1) idempotencia — primero,
+                                                                //     para que reintentos post-pago
+                                                                //     sean no-op sin importar isAnonymous
+      if (!snap.data()?.isAnonymous) throw unauthenticated;     // (2) confirma origen anónimo
+      t.update(userRef, { balance: FieldValue.increment(500),
+                          conversionBonusGranted: true,
+                          isAnonymous: false });
+      t.create(txRef, { type: 'bonus_conversion', amount: 500, ... });
+    });
+    ```
+  - La guarda (1) va primero: si el bono ya fue acreditado (`isAnonymous` ya es `false` en Firestore),
+    los reintentos deben retornar no-op — no fallar por la guarda (2).
 
 > Nota: el trigger `onUserCreate` (bono de registro) **no** se dispara al vincular (el usuario ya
 > existía), por eso hace falta este callable dedicado en vez de reutilizar aquél.
@@ -183,10 +195,12 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 - **`provider-already-linked` / `credential-already-in-use`** → CU-3 (ofrecer iniciar sesión en la
   cuenta existente; advertir pérdida del demo).
 - **`email-already-in-use`** → mismo tratamiento que CU-3.
-- **`requires-recent-login`** → **fallo terminal** para cuentas anónimas. Re-autenticar no es viable:
-  no hay credenciales y `signInAnonymously()` crearía un `uid` nuevo, descartando todo el progreso.
-  La implementación debe tratar este error como terminal y mostrar: *"La sesión ha expirado y no se
-  puede conservar tu progreso. Cierra sesión e inicia de nuevo."* — nunca como un reintento silencioso.
+- **`requires-recent-login`** → **fallo terminal de conversión** (el progreso del demo sigue intacto;
+  solo falló el intento de convertir). Re-autenticar no es viable: no hay credenciales y
+  `signInAnonymously()` crearía un `uid` nuevo. La implementación muestra:
+  *"La sesión de seguridad ha expirado y no es posible completar la conversión ahora. Tu progreso del
+  demo sigue activo; puedes seguir jugando."* — **sin** botón "Cerrar sesión" como acción sugerida
+  (cerrando sesión sí se perdería todo el progreso). Nunca tratar como reintento silencioso.
 - **Vinculación OK pero el bono falla** → CU-4 (idempotencia; el cliente puede reintentar el cobro).
 - **Usuario ya permanente entra a `/convertir`** → el banner no se muestra y la pantalla informa que la
   cuenta ya está registrada.

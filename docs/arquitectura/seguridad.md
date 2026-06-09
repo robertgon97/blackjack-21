@@ -33,8 +33,8 @@ Todas usan el Admin SDK (saltan las Rules) y validan en servidor:
 
 | Function | Qué hace | Validaciones |
 |----------|----------|--------------|
-| `onUserCreate` (trigger) | Crea el doc de `users` y da el bono de registro | Solo se dispara una vez por usuario |
-| `claimConversionBonus` | Da el bono de +500 al convertir cuenta anónima → permanente | El token ya **no** es anónimo (`sign_in_provider != 'anonymous'`); el doc Firestore tiene `isAnonymous == true` (confirma que la cuenta fue anónima — sin esto cualquier cuenta permanente sin el flag podría cobrar el bono); **idempotente** vía `conversionBonusGranted`; transacción atómica |
+| `onUserCreate` (trigger) | Crea el doc de `users` y da el bono de registro | Solo se dispara una vez por usuario; escribe `isAnonymous: sign_in_provider == 'anonymous'` en el doc inicial (necesario para la guarda de `claimConversionBonus`) |
+| `claimConversionBonus` | Da el bono de +500 al convertir cuenta anónima → permanente | El token ya **no** es anónimo (`sign_in_provider != 'anonymous'`); dentro de `runTransaction`: (1) `conversionBonusGranted != true` — idempotencia, primero para que los reintentos post-pago sean no-op; (2) `isAnonymous == true` en el doc — confirma origen anónimo (sin esto cuentas permanentes preexistentes podrían cobrar); escritura atómica de `balance += 500`, `conversionBonusGranted = true`, `isAnonymous = false` y tx `bonus_conversion` |
 | `transferCredits` | Mueve créditos entre dos usuarios | Saldo suficiente; no auto-transferencia; ambos existen; **rate-limit 10/hora/uid**; monto > 0; transacción atómica (Firestore transaction) |
 | `rewardAd` | Acredita créditos por ver un anuncio | `lastAdReward` debe ser > 1 hora antes; idealmente verificar el callback del proveedor de anuncios |
 | `startRound` | Genera el shoe y reparte | Solicitante es host; la sala está en fase `betting`; hay jugadores listos |
