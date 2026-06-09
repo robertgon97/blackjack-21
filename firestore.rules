@@ -46,8 +46,13 @@ service cloud.firestore {
       // La creación del perfil y el saldo inicial los hace la Function onUserCreate.
       // En Fase 3/4, el cliente crea el perfil directamente (workaround hasta que
       // esté habilitado el plan Blaze y desplegada la Function).
-      // Se fuerza balance == 1000 para evitar que el cliente fije un saldo arbitrario.
-      allow create: if esDueno(uid) && request.resource.data.balance == 1000;
+      // Se fuerza balance == 1000 y se verifica que isAnonymous coincida con el
+      // estado real del token Auth para evitar que una cuenta permanente se cree
+      // con isAnonymous: true y cobre el bono de conversión fraudulentamente.
+      allow create: if esDueno(uid)
+        && request.resource.data.balance == 1000
+        && request.resource.data.get('isAnonymous', false)
+             == (request.auth.token.firebase.sign_in_provider == 'anonymous');
 
       // El dueño actualiza su perfil, pero NO balance ni lastAdReward.
       allow update: if esDueno(uid) && noTocaCamposProtegidos();

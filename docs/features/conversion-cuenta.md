@@ -173,11 +173,13 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
     pasen ambos checks antes de que ninguna haya escrito:
     ```ts
     await db.runTransaction(async (t) => {
-      const snap = await t.get(userRef);                        // lectura DENTRO de la tx
+      const snap = await t.get(userRef);
+      if (!snap.exists)                                         // doc no encontrado
+        throw new HttpsError('not-found', 'Perfil de usuario no encontrado.');
       if (snap.data()?.conversionBonusGranted) return;          // (1) idempotencia — primero,
                                                                 //     para que reintentos post-pago
                                                                 //     sean no-op sin importar isAnonymous
-      if (!snap.data()?.isAnonymous)                             // (2) confirma origen anónimo
+      if (!snap.data()?.isAnonymous)                            // (2) confirma origen anónimo
         throw new HttpsError('failed-precondition',             //     (no 'unauthenticated': el usuario
           'La cuenta no fue originalmente anónima.');           //     SÍ está auth; es precondición de negocio)
       t.update(userRef, { balance: FieldValue.increment(500),
@@ -207,6 +209,13 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 - **Usuario ya permanente entra a `/convertir`** → el banner no se muestra y la pantalla informa que la
   cuenta ya está registrada.
 - **Cerrar sesión siendo anónimo** → CU-5 (advertencia de pérdida irreversible).
+- **Cuentas anónimas preexistentes sin campo `isAnonymous`** — las cuentas creadas antes de que
+  `onUserCreate` esté desplegada (o vía el workaround `allow create` del cliente, que no escribía ese
+  campo) no tienen `isAnonymous: true` en Firestore. La guarda (2) las verá como `undefined` → falsy
+  → lanzará `failed-precondition` y el bono quedará inaccesible para usuarios legítimamente anónimos.
+  Antes del despliegue de la Fase 3.5 hay que ejecutar un **script de migración con Admin SDK** que
+  lea el `sign_in_provider` de Firebase Auth de cada usuario y escriba `isAnonymous: true` en los docs
+  de quienes sean `anonymous`.
 
 ## Cómo probarlo
 
