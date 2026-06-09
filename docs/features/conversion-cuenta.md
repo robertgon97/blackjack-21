@@ -59,7 +59,10 @@ Reglas de créditos detalladas en
 ### CU-2 · Convertir con Google
 
 Igual que CU-1 pero con `linkWithCredential(GoogleAuthProvider.credential(...))` (o `linkWithPopup` en
-web). Tras vincular, `displayName`/`avatar` pueden actualizarse a los de la cuenta de Google.
+web). Tras vincular, `firebase_auth_repository.dart` **actualiza explícitamente** el doc de Firestore
+`users/{uid}` con `displayName` y `avatar` del `UserCredential` devuelto (los valores de la cuenta de
+Google), usando `user.displayName` y `user.photoURL`. `linkWithCredential` actualiza Firebase Auth pero
+**no** el doc de Firestore; sin este paso el demo conserva el nombre del demo indefinidamente.
 
 ### CU-3 · El email/Google ya pertenece a otra cuenta
 
@@ -127,12 +130,26 @@ Responsabilidades clave:
 - `i_auth_repository.dart` — añade `vincularConEmail({email, password})` y `vincularConGoogle()`. La UI
   solo conoce esta abstracción.
 - `firebase_auth_repository.dart` — implementa con `currentUser.linkWithCredential(...)` /
-  `linkWithPopup`; tras vincular, hace `await user.getIdToken(true)` para refrescar el token antes de
-  llamar a `claimConversionBonus` (sin este refresh el token sigue siendo anónimo y la Function falla).
+  `linkWithPopup`; tras vincular:
+  1. `await user.getIdToken(true)` — refresco obligatorio del token antes de invocar la Function
+     (sin él el token en caché sigue siendo anónimo y la Function rechaza la llamada).
+  2. Llama a `claimConversionBonus`.
+  3. En CU-2 (Google), actualiza `displayName` y `avatar` en Firestore con los valores de
+     `userCredential.user.displayName` / `photoURL`. Si este paso falla, **no** se propaga el error
+     hacia la presentación (la conversión fue exitosa); se loguea y se ignora — el usuario puede
+     actualizar su perfil después desde la pantalla de perfil.
   **Atrapa `FirebaseAuthException` en la capa data** y lanza un `Exception` con mensaje en español
-  (lección de la Fase 4: la presentación no debe depender de tipos de Firebase —
-  ver `docs/errores-y-correcciones.md`). Distinguir `credential-already-in-use` (incluye
-  `error.credential` recuperable) de `email-already-in-use` (no la incluye) para el flujo de CU-3.
+  (lección de la Fase 4 — ver `docs/errores-y-correcciones.md`). Distinguir `credential-already-in-use`
+  (incluye `error.credential` recuperable para `signInWithCredential`) de `email-already-in-use` (no la
+  incluye; el usuario debe hacer `signInWithEmailAndPassword` manualmente) — ver CU-3.
+- `_fromDoc` en `firebase_auth_repository.dart` — usar **`user.isAnonymous` del token Auth** como
+  fuente de verdad, no el campo Firestore (`d['isAnonymous']`). El campo Firestore se actualiza
+  al final de `claimConversionBonus`; si `_fromDoc` lee Firestore primero, `perfilStream` emite
+  `isAnonymous: true` durante la ventana post-`linkWithCredential` / pre-Function y el banner de
+  conversión reaparece brevemente. Patrón correcto: cambiar la firma a
+  `_fromDoc(DocumentSnapshot snap, User user)` y pasarla desde el punto donde se combina el stream
+  de Auth con el de Firestore — mantiene `_fromDoc` pura y testeable con mocks (evita
+  `FirebaseAuth.instance.currentUser` como dependencia implícita).
 - `pantalla_conversion.dart` — formulario (email, contraseña, nombre editable) + botón Google.
 - `banner_conversion.dart` — invitación descartable; se oculta si la cuenta ya es permanente.
 - `app_router.dart` — la ruta `/convertir` es alcanzable **mientras hay sesión**; el `redirect` actual
@@ -154,9 +171,36 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 - **`claimConversionBonus`** (callable, región `southamerica-east1`):
   - Valida `request.auth` y que el token **ya no sea anónimo**
     (`request.auth.token.firebase.sign_in_provider != 'anonymous'`) — impide cobrar antes de convertir.
-  - Lee `users/{uid}`; si `conversionBonusGranted == true` → no hace nada (idempotente).
-  - Si no, en una **transacción de Firestore**: `balance += 500`, `conversionBonusGranted = true`,
-    `isAnonymous = false`, y escribe la transacción `bonus_conversion`.
+  - Toda la lógica de guardas y escritura ocurre **dentro de `runTransaction`** usando el snapshot
+    transaccional (`t.get(userRef)`), para evitar la carrera TOCTOU donde dos llamadas concurrentes
+    pasen ambos checks antes de que ninguna haya escrito:
+    ```ts
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      if (!snap.exists)                                         // doc no encontrado
+        throw new HttpsError('not-found', 'Perfil de usuario no encontrado.');
+      if (snap.data()?.conversionBonusGranted) return;          // (1) idempotencia — primero,
+                                                                //     para que reintentos post-pago
+                                                                //     sean no-op sin importar isAnonymous
+      if (!snap.data()?.isAnonymous)                            // (2) confirma origen anónimo
+        throw new HttpsError('failed-precondition',             //     (no 'unauthenticated': el usuario
+          'La cuenta no fue originalmente anónima.');           //     SÍ está auth; es precondición de negocio)
+      t.update(userRef, { balance: FieldValue.increment(500),
+                          conversionBonusGranted: true,
+                          isAnonymous: false });
+      // txRef = userRef.collection('transactions').doc()  → users/{uid}/transactions/{auto-id}
+      t.create(userRef.collection('transactions').doc(), {  // ver campos en modelo-datos.md
+        uid,                                                // = request.auth.uid
+        type: 'bonus_conversion',
+        amount: 500,
+        balance_after: (snap.data()?.balance ?? 0) + 500,
+        description: 'Bono por convertir cuenta demo a permanente',
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    });
+    ```
+  - La guarda (1) va primero: si el bono ya fue acreditado (`isAnonymous` ya es `false` en Firestore),
+    los reintentos deben retornar no-op — no fallar por la guarda (2).
 
 > Nota: el trigger `onUserCreate` (bono de registro) **no** se dispara al vincular (el usuario ya
 > existía), por eso hace falta este callable dedicado en vez de reutilizar aquél.
@@ -166,12 +210,43 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 - **`provider-already-linked` / `credential-already-in-use`** → CU-3 (ofrecer iniciar sesión en la
   cuenta existente; advertir pérdida del demo).
 - **`email-already-in-use`** → mismo tratamiento que CU-3.
-- **`requires-recent-login`** → poco probable en una cuenta anónima recién creada; si ocurre, re-autenticar
-  y reintentar.
+- **`requires-recent-login`** → **fallo terminal de conversión** (el progreso del demo sigue intacto;
+  solo falló el intento de convertir). Re-autenticar no es viable: no hay credenciales y
+  `signInAnonymously()` crearía un `uid` nuevo. La implementación muestra:
+  *"La sesión de seguridad ha expirado y no es posible completar la conversión ahora. Tu progreso del
+  demo sigue activo; puedes seguir jugando."* — **sin** botón "Cerrar sesión" como acción sugerida
+  (cerrando sesión sí se perdería todo el progreso). Nunca tratar como reintento silencioso.
 - **Vinculación OK pero el bono falla** → CU-4 (idempotencia; el cliente puede reintentar el cobro).
 - **Usuario ya permanente entra a `/convertir`** → el banner no se muestra y la pantalla informa que la
   cuenta ya está registrada.
 - **Cerrar sesión siendo anónimo** → CU-5 (advertencia de pérdida irreversible).
+- **Cuentas anónimas preexistentes sin campo `isAnonymous`** — las cuentas creadas antes de que
+  `onUserCreate` esté desplegada (o vía el workaround `allow create` del cliente, que no escribía ese
+  campo) no tienen `isAnonymous: true` en Firestore. La guarda (2) las verá como `undefined` → falsy
+  → lanzará `failed-precondition` y el bono quedará inaccesible para usuarios legítimamente anónimos.
+  Antes del despliegue de la Fase 3.5 hay que ejecutar un **script de migración con Admin SDK** que
+  lea el `sign_in_provider` de Firebase Auth de cada usuario y escriba `isAnonymous: true` en los docs
+  de quienes sean `anonymous`.
+
+## Checklist de deploy (orden obligatorio)
+
+> ⚠️ El orden importa. Saltarse o invertir los pasos bloquea a usuarios reales.
+
+1. **Script de migración Admin SDK** — antes de cualquier deploy, escribir `isAnonymous: true` en
+   los docs de todos los usuarios cuyo `sign_in_provider` en Firebase Auth sea `anonymous` y que aún
+   no tengan el campo. El script debe ser **idempotente** (no sobreescribir `isAnonymous: false` en
+   cuentas ya convertidas) y ejecutarse en **lotes** para no agotar cuotas de lectura.
+2. **Deploy de `onUserCreate` actualizado** — que incluya la escritura de `isAnonymous` al crear el
+   doc. A partir de aquí, los usuarios nuevos tendrán el campo desde la creación.
+3. **Deploy de `firestore.rules` de este PR** — ya son backward-compatible; desplegarlas no rompe
+   clientes Dart existentes (`isAnonymous` es opcional en la regla). **A la vez que el paso 2**,
+   **eliminar** el workaround de creación de perfil del cliente Dart: una vez `onUserCreate` está
+   desplegada, el trigger crea el doc; si el cliente también lo intenta, falla con *doc-ya-existente*.
+   Las cuentas creadas durante la ventana de transición quedan cubiertas por el re-run del paso 5.
+4. **Deploy de `claimConversionBonus`** — solo después de los pasos 1–3. Si se despliega antes,
+   las cuentas anónimas creadas durante la ventana (pasos 1–2) recibirán `failed-precondition`.
+5. **Re-ejecutar el script de migración** — cubre las cuentas anónimas creadas vía workaround
+   entre los pasos 2 y 3 (ventana en que el cliente todavía no escribía `isAnonymous`).
 
 ## Cómo probarlo
 
