@@ -35,7 +35,7 @@ service cloud.firestore {
       return request.resource.data.balance == resource.data.balance &&
         request.resource.data.lastAdReward == resource.data.lastAdReward &&
         request.resource.data.conversionBonusGranted == resource.data.get('conversionBonusGranted', false) &&
-        request.resource.data.get('isAnonymous', true) == resource.data.get('isAnonymous', true);
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAnonymous']);
     }
 
     // ---------- users ----------
@@ -46,13 +46,15 @@ service cloud.firestore {
       // La creación del perfil y el saldo inicial los hace la Function onUserCreate.
       // En Fase 3/4, el cliente crea el perfil directamente (workaround hasta que
       // esté habilitado el plan Blaze y desplegada la Function).
-      // Se fuerza balance == 1000 y se verifica que isAnonymous coincida con el
-      // estado real del token Auth para evitar que una cuenta permanente se cree
-      // con isAnonymous: true y cobre el bono de conversión fraudulentamente.
+      // Se fuerza balance == 1000. Si el cliente incluye isAnonymous, debe coincidir
+      // con el estado real del token Auth (evita fraud del bono de conversión).
+      // Si no lo incluye, se permite (workaround legacy sin el campo).
+      // NOTA: este workaround debe eliminarse cuando onUserCreate esté desplegada.
       allow create: if esDueno(uid)
         && request.resource.data.balance == 1000
-        && request.resource.data.get('isAnonymous', false)
-             == (request.auth.token.firebase.sign_in_provider == 'anonymous');
+        && (!request.resource.data.keys().hasAny(['isAnonymous'])
+             || request.resource.data.isAnonymous
+                  == (request.auth.token.firebase.sign_in_provider == 'anonymous'));
 
       // El dueño actualiza su perfil, pero NO balance ni lastAdReward.
       allow update: if esDueno(uid) && noTocaCamposProtegidos();

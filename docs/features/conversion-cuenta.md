@@ -185,7 +185,14 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
       t.update(userRef, { balance: FieldValue.increment(500),
                           conversionBonusGranted: true,
                           isAnonymous: false });
-      t.create(txRef, { type: 'bonus_conversion', amount: 500, ... });
+      t.create(txRef, {           // ver campos en docs/arquitectura/modelo-datos.md
+        uid,
+        type: 'bonus_conversion',
+        amount: 500,
+        balance_after: snap.data()!.balance + 500,
+        description: 'Bono por convertir cuenta demo a permanente',
+        createdAt: FieldValue.serverTimestamp(),
+      });
     });
     ```
   - La guarda (1) va primero: si el bono ya fue acreditado (`isAnonymous` ya es `false` en Firestore),
@@ -216,6 +223,22 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
   Antes del despliegue de la Fase 3.5 hay que ejecutar un **script de migración con Admin SDK** que
   lea el `sign_in_provider` de Firebase Auth de cada usuario y escriba `isAnonymous: true` en los docs
   de quienes sean `anonymous`.
+
+## Checklist de deploy (orden obligatorio)
+
+> ⚠️ El orden importa. Saltarse o invertir los pasos bloquea a usuarios reales.
+
+1. **Script de migración Admin SDK** — antes de cualquier deploy, escribir `isAnonymous: true` en
+   los docs de todos los usuarios cuyo `sign_in_provider` en Firebase Auth sea `anonymous` y que aún
+   no tengan el campo. El script debe ser **idempotente** (no sobreescribir `isAnonymous: false` en
+   cuentas ya convertidas) y ejecutarse en **lotes** para no agotar cuotas de lectura.
+2. **Deploy de `onUserCreate` actualizado** — que incluya la escritura de `isAnonymous` al crear el
+   doc. A partir de aquí, los usuarios nuevos tendrán el campo desde la creación.
+3. **Deploy de `claimConversionBonus`** — solo después de que el script haya corrido; si se despliega
+   antes, los usuarios anónimos preexistentes recibirán `failed-precondition` al intentar cobrar.
+4. **Deploy de `firestore.rules`** — junto con el código Dart actualizado del workaround que incluya
+   `isAnonymous` en el payload de creación (para que la nueva regla de `allow create` no bloquee
+   el registro de usuarios anónimos).
 
 ## Cómo probarlo
 
