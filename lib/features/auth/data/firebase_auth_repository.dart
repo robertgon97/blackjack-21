@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -11,13 +12,17 @@ class FirebaseAuthRepository implements IAuthRepository {
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
     GoogleSignIn? googleSignIn,
+    FirebaseFunctions? functions,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _db = firestore ?? FirebaseFirestore.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _functions = functions ??
+            FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _db;
   final GoogleSignIn _googleSignIn;
+  final FirebaseFunctions _functions;
 
   @override
   Stream<PerfilUsuario?> get perfilStream {
@@ -92,12 +97,88 @@ class FirebaseAuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<PerfilUsuario> vincularConEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No hay sesión activa para convertir.');
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      final cred = await user.linkWithCredential(credential);
+      await cred.user!.updateDisplayName(displayName);
+      // El nombre editado en el formulario reemplaza al del demo.
+      await _db.collection('users').doc(user.uid).update({
+        'displayName': displayName,
+        'email': email,
+      });
+      return _finalizarConversion(cred.user!);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_mensajeVinculacion(e.code));
+    }
+  }
+
+  @override
+  Future<PerfilUsuario> vincularConGoogle() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No hay sesión activa para convertir.');
+    try {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        throw Exception('Vinculación con Google cancelada.');
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final cred = await user.linkWithCredential(credential);
+      final linked = cred.user!;
+      // linkWithCredential actualiza Firebase Auth pero NO el doc de Firestore;
+      // se copia el nombre/avatar de Google al perfil. Es fire-and-forget: si
+      // falla, la conversión ya fue exitosa y el usuario puede editarlo después.
+      try {
+        await _db.collection('users').doc(user.uid).update({
+          'displayName': linked.displayName ?? 'Jugador',
+          'email': linked.email ?? '',
+          if (linked.photoURL != null) 'avatar': linked.photoURL,
+        });
+      } catch (_) {
+        // Ignorado a propósito (ver comentario arriba).
+      }
+      return _finalizarConversion(linked);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_mensajeVinculacion(e.code));
+    }
+  }
+
+  @override
   Future<void> salir() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────
+
+  /// Tras vincular: refresca el token (para que ya no sea anónimo), invoca la
+  /// Function que acredita el bono y devuelve el perfil actualizado.
+  Future<PerfilUsuario> _finalizarConversion(User user) async {
+    // Refresco obligatorio: sin esto el token en caché sigue siendo anónimo y
+    // la Function rechaza la llamada con failed-precondition.
+    await user.getIdToken(true);
+    try {
+      await _functions.httpsCallable('claimConversionBonus').call<void>();
+    } on FirebaseFunctionsException catch (e) {
+      // La conversión Auth ya fue exitosa; si el bono falla el cliente puede
+      // reintentar (la Function es idempotente). No bloqueamos al usuario.
+      throw Exception(_mensajeBono(e.code, e.message));
+    }
+    return _fetchPerfil(user);
+  }
 
   Future<PerfilUsuario> _fetchPerfil(User user) async {
     final doc = await _db.collection('users').doc(user.uid).get();
@@ -156,7 +237,11 @@ class FirebaseAuthRepository implements IAuthRepository {
       avatar: d['avatar'] as String? ?? '🃏',
       balance: d['balance'] as int? ?? 0,
       inviteCode: d['inviteCode'] as String? ?? '',
-      isAnonymous: d['isAnonymous'] as bool? ?? user.isAnonymous,
+      // Fuente de verdad: el token Auth, no el campo Firestore. El doc se
+      // actualiza al final de claimConversionBonus; leer Firestore aquí dejaría
+      // isAnonymous: true durante la ventana post-link / pre-Function y el banner
+      // de conversión reaparecería brevemente.
+      isAnonymous: user.isAnonymous,
     );
   }
 
@@ -164,4 +249,29 @@ class FirebaseAuthRepository implements IAuthRepository {
     final parte = uid.substring(0, 4).toUpperCase();
     return 'BJ-$parte';
   }
+
+  /// Traduce códigos de FirebaseAuthException a mensajes en español. La
+  /// presentación no debe depender de los tipos de Firebase (lección de Fase 4).
+  String _mensajeVinculacion(String code) => switch (code) {
+        'credential-already-in-use' ||
+        'email-already-in-use' ||
+        'provider-already-linked' =>
+          'Ese email ya tiene una cuenta. Inicia sesión en ella, pero perderás '
+              'el progreso de esta sesión de demo.',
+        'invalid-email' => 'Email inválido.',
+        'weak-password' => 'Contraseña muy débil (mín. 6 caracteres).',
+        'requires-recent-login' =>
+          'La sesión de seguridad ha expirado y no es posible completar la '
+              'conversión ahora. Tu progreso del demo sigue activo; puedes seguir '
+              'jugando.',
+        _ => 'No se pudo crear la cuenta. Intenta de nuevo.',
+      };
+
+  String _mensajeBono(String? code, String? message) => switch (code) {
+        'failed-precondition' =>
+          'La cuenta no es elegible para el bono de conversión.',
+        'not-found' => 'Perfil de usuario no encontrado.',
+        _ =>
+          'No se pudo acreditar el bono: ${message ?? code ?? 'desconocido'}',
+      };
 }

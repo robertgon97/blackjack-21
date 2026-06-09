@@ -1,8 +1,10 @@
 # Feature: Conversión de cuenta anónima a permanente
 
-> **Estado: DISEÑO — pendiente de implementar.** Esta ficha describe el diseño aprobado; el código
-> aún no existe. Corresponde a la **Fase 3.5** del [plan maestro](../plans/00-app-multiplataforma.md)
-> (mejora de la Fase 3 de auth). Al implementarla, quitar este aviso y marcar lo realmente hecho.
+> **Estado: IMPLEMENTADO** (Fase 3.5). Código en `features/auth/` (repo + `pantalla_conversion`,
+> `banner_conversion`), ruta `/convertir` en `core/router/`, Function `claimConversionBonus` en
+> `functions/src/conversion.ts` y advertencia de cierre de sesión (CU-5) en el panel de ajustes del
+> juego. **Pendiente de despliegue:** ver «Checklist de deploy» más abajo (Blaze + deploy de la
+> Function y las rules).
 
 ## Propósito
 
@@ -204,6 +206,12 @@ Ver [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
 
 > Nota: el trigger `onUserCreate` (bono de registro) **no** se dispara al vincular (el usuario ya
 > existía), por eso hace falta este callable dedicado en vez de reutilizar aquél.
+>
+> **Realidad de la implementación (Fase 3.5):** `onUserCreate` **aún no existe como Cloud Function**;
+> el perfil lo crea el cliente en `firebase_auth_repository._fetchOCrearPerfil`, que **ya escribe**
+> `isAnonymous: user.isAnonymous` al crear el doc. Por tanto las cuentas anónimas creadas por la app
+> actual ya cumplen la guarda (2) de `claimConversionBonus`. El script de migración del checklist solo
+> aplica a cuentas anónimas **preexistentes** que no tuvieran el campo (si las hubiera en producción).
 
 ## Casos borde
 

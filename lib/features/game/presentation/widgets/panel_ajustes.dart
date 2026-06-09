@@ -3,12 +3,15 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../auth/presentation/auth_provider.dart';
 import '../../domain/modelos.dart';
 
 /// Hoja inferior para cambiar las variantes de casa. Trabaja sobre una copia
 /// local y la entrega por [onGuardar] al confirmar.
-class PanelAjustes extends StatefulWidget {
+class PanelAjustes extends ConsumerStatefulWidget {
   final ConfigJuego config;
   final ValueChanged<ConfigJuego> onGuardar;
 
@@ -19,10 +22,10 @@ class PanelAjustes extends StatefulWidget {
   });
 
   @override
-  State<PanelAjustes> createState() => _PanelAjustesState();
+  ConsumerState<PanelAjustes> createState() => _PanelAjustesState();
 }
 
-class _PanelAjustesState extends State<PanelAjustes> {
+class _PanelAjustesState extends ConsumerState<PanelAjustes> {
   late ConfigJuego _config;
 
   @override
@@ -107,11 +110,72 @@ class _PanelAjustesState extends State<PanelAjustes> {
                   child: const Text('Guardar'),
                 ),
               ),
+              const Divider(height: 32),
+              Center(
+                child: TextButton.icon(
+                  icon: Icon(
+                    Icons.logout,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  label: Text(
+                    'Cerrar sesión',
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                  onPressed: _cerrarSesion,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Cierra la sesión. Si la cuenta es anónima (demo), advierte primero que el
+  /// progreso es irrecuperable y ofrece crear una cuenta (CU-5).
+  Future<void> _cerrarSesion() async {
+    final perfil = ref.read(perfilStreamProvider).valueOrNull;
+    final esAnonimo = perfil?.isAnonymous ?? false;
+
+    if (esAnonimo) {
+      final accion = await showDialog<_AccionCierre>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('¿Cerrar sesión?'),
+          content: const Text(
+            'Tu cuenta demo no se puede recuperar. Si cierras sesión perderás '
+            'tu saldo y tus amigos. ¿Crear una cuenta primero?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(_AccionCierre.cancelar),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(_AccionCierre.cerrar),
+              child: const Text('Cerrar de todos modos'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(_AccionCierre.crearCuenta),
+              child: const Text('Crear cuenta'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || accion == null || accion == _AccionCierre.cancelar) {
+        return;
+      }
+      if (accion == _AccionCierre.crearCuenta) {
+        Navigator.of(context).pop(); // cierra el panel de ajustes
+        if (mounted) context.go('/convertir');
+        return;
+      }
+    }
+
+    await ref.read(authRepositoryProvider).salir();
+    // El redirect del router lleva a /login al desaparecer el perfil.
+    if (mounted) Navigator.of(context).pop();
   }
 
   Widget _filaBarajas() {
@@ -166,3 +230,6 @@ class _PanelAjustesState extends State<PanelAjustes> {
     );
   }
 }
+
+/// Resultado del diálogo de advertencia al cerrar sesión siendo anónimo (CU-5).
+enum _AccionCierre { cancelar, cerrar, crearCuenta }
