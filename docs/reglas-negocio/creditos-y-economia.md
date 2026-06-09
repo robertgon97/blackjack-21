@@ -10,7 +10,7 @@ Functions** pueden modificar el saldo (`balance`). Ver
 | Origen | Monto | Implementación | Límite / condición |
 |--------|-------|----------------|--------------------|
 | Registro nuevo | **+1,000** | Function `onUserCreate` | Una vez por usuario |
-| Demo anónimo → cuenta real | **+500** | Function al vincular credencial | Una vez, al convertir cuenta |
+| Demo anónimo → cuenta real | **+500** | Function `claimConversionBonus` | Una vez (`conversionBonusGranted`); ver [`../features/conversion-cuenta.md`](../features/conversion-cuenta.md) |
 | Invitación aceptada — invitador | **+500** | Function al aceptar amistad | Por cada amigo nuevo que se registra con su código |
 | Invitación aceptada — invitado | **+300** | Function al aceptar amistad | Una vez, al registrarse vía código |
 | Ver un anuncio | **+200** | Function `rewardAd` | **Máximo 1 vez por hora** (`lastAdReward`) |

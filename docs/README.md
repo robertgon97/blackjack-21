@@ -47,6 +47,8 @@ de arquitectura y la ficha de cada feature. Si el código y un documento de `reg
 ### 🧩 Features
 - [`features/_plantilla-feature.md`](features/_plantilla-feature.md) — Plantilla para documentar cada
   feature nueva.
+- [`features/conversion-cuenta.md`](features/conversion-cuenta.md) — **(diseño)** Conversión de cuenta
+  anónima → permanente (account linking + bono de +500). Fase 3.5.
 - Las fichas concretas (`auth.md`, `game.md`, `wallet.md`, `friends.md`, `rooms.md`, `comms.md`, …) se
   agregan **junto con** cada feature.
 
