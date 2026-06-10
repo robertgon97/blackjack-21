@@ -107,15 +107,16 @@ lib/
 - Proyecto: `blackjack-21-app`
 - Región Firestore: `southamerica-east1` (São Paulo)
 - Reglas y índices: `firestore.rules` / `firestore.indexes.json` (ya desplegados)
-- Pendiente (acción manual en consola Firebase):
-  - Habilitar plan Blaze (necesario para Cloud Functions)
-  - Habilitar proveedores de Auth: Email/Password, Google, Anónimo
-  - `flutterfire configure` (genera `lib/firebase_options.dart`)
+- ✅ Plan **Blaze** activo (Cloud Functions en producción desde la Fase 4).
+- ✅ Proveedores de Auth habilitados: Email/Password, Google, Anónimo.
+- ✅ `flutterfire configure` ejecutado: `lib/firebase_options.dart` generado (web/Android/iOS/Windows).
+- ✅ **Firma Android** + **Google Sign-In**: keystore y 4 GitHub Secrets configurados; huellas SHA
+  registradas en Firebase (`google-services.json` con OAuth client de tipo 1).
 
 ## Tests
 
 ```bash
-flutter test                           # corre los 32 tests de domain
+flutter test                           # corre los 42 tests de domain
 flutter test --reporter=expanded       # con detalle de cada test
 ```
 
@@ -165,12 +166,12 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 
 ## Pendiente (fases futuras)
 
-- `lib/firebase_options.dart` (generado por `flutterfire configure`) — acción manual del usuario
-- Cloud Functions en `functions/src/` (TypeScript) — escriben `balance` y `transactions`
-- Riverpod providers para las features que faltan (rooms, comms, profile…)
+- Riverpod providers para las features que faltan (comms, profile…)
 - `freezed` para los modelos (hoy son inmutables con `copyWith` a mano)
-- Fichas de `docs/features/` para las features restantes (rooms, comms, profile…)
-- **Fase 5 (siguiente):** salas multijugador en tiempo real (ver `docs/reglas-negocio/salas-y-multijugador.md`)
+- Fichas de `docs/features/` para las features restantes (comms, profile…)
+- **Fase 6 (siguiente):** observabilidad base — Crashlytics + Analytics (ver
+  `docs/plans/01-firebase-observabilidad-y-crecimiento.md`). Hoja de ruta completa de fases 6–14 en
+  `docs/plans/`.
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
