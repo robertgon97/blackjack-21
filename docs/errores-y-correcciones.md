@@ -232,3 +232,29 @@ recortados a invariantes de una línea. Reglas revalidadas en el emulador.
 **Aprendizaje:** al endurecer una regla que compara subcampos del documento, considerar el caso de
 **borrado** (el subdocumento deja de existir → acceder a sus campos da `null`): hay que exceptuarlo
 explícitamente o se bloquean operaciones legítimas como salir.
+
+---
+
+## 2026-06-10 — Pantalla negra en el APK de release: faltaba el permiso INTERNET
+
+**Qué falló:** al probar el primer APK de **release** firmado en Android (distribuido vía App
+Distribution, Fase 14), la app se quedaba en pantalla negra apenas abría. En `flutter run` (debug)
+funcionaba bien.
+
+**Causa:** el permiso `android.permission.INTERNET` solo estaba declarado en
+`android/app/src/debug/AndroidManifest.xml` (manifest que Flutter genera por defecto para que el
+tooling de debug/hot-reload tenga red). El manifest principal `src/main/AndroidManifest.xml` **no**
+lo declaraba, así que el APK de release quedaba sin acceso a red. Sin internet, `Firebase.initializeApp`
+arrancaba pero el stream de sesión (`authStateChanges`) que usa el guard del router nunca emitía su
+primer valor → la app se quedaba colgada en la carga inicial, que con el tema oscuro del sistema
+(`values-night/styles.xml` usa `Theme.Black` para `NormalTheme`) se ve **negra**. No se notó antes
+porque hasta esta fase solo se probaba en debug, donde el permiso se inyecta automáticamente.
+
+**Corrección:** se añadió `<uses-permission android:name="android.permission.INTERNET"/>` como hijo
+directo de `<manifest>` en `android/app/src/main/AndroidManifest.xml`, con un comentario que explica
+por qué es necesario para release.
+
+**Aprendizaje:** los permisos que Flutter inyecta solo en el manifest de `debug` (INTERNET) deben
+declararse explícitamente en `src/main` para que el build de **release** los tenga. Probar siempre un
+APK de release (`flutter build apk --release` + instalar) antes de distribuir a testers, no confiar
+solo en `flutter run` en debug.

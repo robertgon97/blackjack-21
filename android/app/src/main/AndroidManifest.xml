@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Requerido por Firebase (Auth, Firestore, Functions) en builds de release.
+         En debug, Flutter inyecta este permiso vía src/debug/AndroidManifest.xml,
+         pero el APK de release necesita declararlo aquí o no hay acceso a red y la
+         app se queda colgada en la carga inicial (pantalla negra). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Blackjack 21"
         android:name="${applicationName}"
