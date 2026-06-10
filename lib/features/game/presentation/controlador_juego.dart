@@ -256,11 +256,16 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     final hayBlackjack = calcularPuntos(state.manoCrupier) == 21 ||
         calcularPuntos(state.manos[0].cartas) == 21;
     if (hayBlackjack) {
-      await _telemetria.evento('blackjack');
+      if (calcularPuntos(state.manos[0].cartas) == 21) {
+        await _telemetria.evento('blackjack', params: {'quien': 'jugador'});
+      }
+      if (calcularPuntos(state.manoCrupier) == 21) {
+        await _telemetria.evento('blackjack', params: {'quien': 'crupier'});
+      }
       state = state.copyWith(animando: true);
       _revelarCrupier();
       await _pausa(600);
-      _finalizarRonda();
+      await _finalizarRonda();
       return;
     }
     await _jugarManoActiva();
@@ -493,14 +498,14 @@ class ControladorJuego extends Notifier<EstadoJuego> {
         await _darCartaCrupierVisible(pausaMs: _pausaCrupier);
       }
     }
-    _finalizarRonda();
+    await _finalizarRonda();
   }
 
   // ----------------------------------------------------------
   //  Resolución de la ronda
   // ----------------------------------------------------------
 
-  void _finalizarRonda() {
+  Future<void> _finalizarRonda() async {
     var banca = state.banca;
     var netoTotal = 0;
     final partes = <String>[];
@@ -552,7 +557,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     final textoCrupier = pc > 21 ? 'se pasó ($pc)' : '$pc';
     final mensaje = 'Crupier: $textoCrupier. ${partes.join(' · ')}';
 
-    _telemetria.evento(
+    await _telemetria.evento(
       'mano_resuelta',
       params: {
         'resultado':
@@ -560,7 +565,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
         'neto': netoTotal,
       },
     );
-    if (banca == 0) _telemetria.evento('saldo_agotado');
+    if (banca == 0) await _telemetria.evento('saldo_agotado');
 
     state = _conInfoShoe(
       state.copyWith(

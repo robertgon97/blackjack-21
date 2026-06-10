@@ -11,11 +11,12 @@ export 'domain/i_servicio_telemetria.dart';
 
 /// Provider global del servicio de telemetría.
 ///
-/// - Android / iOS / macOS / Linux: Crashlytics + Analytics.
+/// - Android / iOS / macOS: Crashlytics + Analytics.
 /// - Web: solo Analytics (Crashlytics no soporta Web).
-/// - Windows: no-op (ningún servicio Firebase soporta Windows).
+/// - Windows / Linux: no-op (Firebase Crashlytics no soporta estas plataformas).
 final servicioTelemetriaProvider = Provider<IServicioTelemetria>((ref) {
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+  const sinSoporte = {TargetPlatform.windows, TargetPlatform.linux};
+  if (!kIsWeb && sinSoporte.contains(defaultTargetPlatform)) {
     return const NoopTelemetria();
   }
   if (kIsWeb) {
