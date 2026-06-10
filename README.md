@@ -8,13 +8,23 @@ Disponible en **Android**, **Web**, **Windows** e **iOS**.
 | Fase | Descripción | Estado |
 |------|-------------|--------|
 | 0 | Andamiaje, docs y migración del repo | ✅ Completa |
-| 1 | Lógica pura (domain) + 32 tests | ✅ Completa |
+| 1 | Lógica pura (domain) + tests | ✅ Completa |
 | 2 | Juego solo en Flutter (UI, 4 temas) | ✅ Completa |
 | 3 | Auth + perfil + saldo persistente | ✅ Completa |
+| 3.5 | Conversión de cuenta anónima → permanente | ✅ Completa |
 | 4 | Social: amigos y transferencias | ✅ Completa |
-| 5 | Salas multijugador en tiempo real | 🔲 Pendiente |
-| 6 | Comunicación en sala (chat + voz + cámara) | 🔲 Pendiente |
-| 7 | Monetización y pulido | 🔲 Pendiente |
+| 5 | Salas multijugador en tiempo real | ✅ Completa |
+| 6 | Observabilidad: Crashlytics + Analytics | 🔲 Pendiente |
+| 7 | Endurecimiento del backend: App Check | 🔲 Pendiente |
+| 8 | Perfil + estadísticas de juego | 🔲 Pendiente |
+| 9 | Progresión: niveles/XP + logros | 🔲 Pendiente |
+| 10 | Leaderboards + bono diario + misiones | 🔲 Pendiente |
+| 11 | Monetización y pulido (anuncios, PWA, push) | 🔲 Pendiente |
+| 12 | Remote Config + A/B Testing | 🔲 Pendiente |
+| 13 | Comunicación en sala (chat + voz + cámara) | 🔲 Pendiente |
+| 14 | Distribución: App Distribution + Test Lab | 🔲 Pendiente |
+
+> Roadmap detallado de las fases 6–14 en [`docs/plans/`](docs/plans/).
 
 ## Cómo correr (desarrollo)
 
@@ -51,7 +61,7 @@ lib/
     game/presentation/          ← UI del juego solo (controlador Riverpod + widgets)
     auth/ · wallet/ · friends/
     rooms/ · comms/ · profile/
-test/                           ← tests de domain (32 asserts)
+test/                           ← tests de domain (42 tests)
 functions/                      ← Cloud Functions (TypeScript)
 docs/                           ← reglas de negocio y arquitectura
 legacy-web/                     ← juego JS original archivado
@@ -63,9 +73,11 @@ Consulta [`docs/README.md`](docs/README.md) para la documentación completa.
 
 | Workflow | Disparador | Qué hace |
 |----------|-----------|----------|
-| `ci.yml` | push / PR a main | `dart format` + `flutter analyze` + `flutter test` |
+| `ci.yml` | push / PR a main | Analyze & Test (format + analyze + test) y Lint & Build de Functions |
 | `deploy-web.yml` | push a main | `flutter build web` → GitHub Pages |
-| `release.yml` | tag `v*` | APK Android + build iOS sin firma → GitHub Release |
+| `deploy-firebase.yml` | push a main | Firestore (reglas + índices) + Functions + Hosting |
+| `build-artifacts.yml` | push a main + manual | APK debug (Android) + build Windows |
+| `release.yml` | tag `v*` | APK + AAB **firmados** + iOS sin firma → GitHub Release (versión desde el tag) |
 
 > **Nota GitHub Pages:** en Settings → Pages → Source debe estar en **"GitHub Actions"**.
 

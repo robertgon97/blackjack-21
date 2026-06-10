@@ -194,3 +194,11 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > `firestore.rules` protege `isAnonymous`/`conversionBonusGranted`. El despliegue es **automático
 > al mergear a main** (workflow `deploy-firebase.yml` → jobs Firestore + Functions + Hosting; Blaze
 > ya activo). Ficha: [`docs/features/conversion-cuenta.md`](docs/features/conversion-cuenta.md).
+>
+> **Hecho en Fase 5:** salas multijugador en tiempo real (`features/rooms/`). Reparto y resolución
+> **server-side** anti-trampa vía Cloud Functions `startRound` y `playerAction`; el shoe vive oculto en
+> `games/{id}/serverData/current` (`allow read: if false`). Flujo waiting→betting→playing→finished,
+> reglas granulares por rol en `rooms`. Ficha: [`docs/features/rooms.md`](docs/features/rooms.md).
+>
+> **Siguiente — Fases 6–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
+> (observabilidad, App Check, perfil/progresión/leaderboards, monetización, comunicación…).
