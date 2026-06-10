@@ -154,3 +154,37 @@ autoritativa debe actualizar ambas copias en la misma transacción.
 
 **Pendiente para Fase 6 (mejoras menores del review, no bugs):** fichas de apuesta de
 `PanelApuestasSala` que respeten `apuestaMin`; `salaActionsProvider` con `autoDispose`.
+
+---
+
+## 2026-06-10 — Hallazgos finales del review de Fase 5 (post-merge del PR #12)
+
+**Qué falló:** el review automático dejó 6 comentarios inline sobre el último commit justo cuando se
+mergeó el PR #12, así que no se atendieron en su momento:
+
+1. **Seguridad — `firestore.rules`:** `soloActualizaSuJugador` permitía a un miembro cambiar cualquier
+   subcampo de su entrada en `players`, incluido `isSpectator`. Un espectador podía ponerse
+   `isSpectator: false` y colarse como jugador activo sin pasar por el alta controlada (rompiendo la
+   invariante de asiento/apuesta).
+2. **UI — `room_page.dart`:** el botón «Iniciar apuestas» aparecía duplicado en `_BarraSala` y en
+   `_FaseEspera` durante la fase `waiting`.
+3. **Robustez — `room_page.dart`:** el botón «Salir de la sala» de `_FaseResultados` llamaba `salir()`
+   sin `try-catch`; un fallo de red dejaba la pantalla congelada sin feedback.
+4. **Limpieza — `room_page.dart`:** `onAccion: (a) => onAccion(a)` (lambda redundante).
+5. **Limpieza — `firestore_sala_repository.dart`:** `_proximoAsiento` devolvía `asientos.length`
+   (índice inválido) cuando los 6 asientos estaban llenos, en vez de fallar explícito.
+
+**Corrección:** `soloActualizaSuJugador` ahora exige que `isSpectator` y `seat` no cambien (solo se
+puede tocar apuesta/ready/connected). Se elimina el botón duplicado (la acción queda solo en
+`_FaseEspera`; la barra muestra siempre el código de invitación). El botón «Salir» de resultados se
+envuelve en `try-catch` con aviso. `onAccion` se pasa directo. `_proximoAsiento` lanza `StateError` si
+no hay asientos. Reglas validadas con el emulador de Firestore.
+
+**Limitación conocida (no corregida):** `seUneSolo` usa `players.size()` (incluye espectadores) en vez
+del recuento de activos; arreglarlo en reglas requeriría iterar el mapa (no soportado). El impacto es
+solo restrictivo (no un agujero), anotado para revisión futura.
+
+**Aprendizaje:** al mergear un PR con review automático, esperar a que el bot termine de comentar el
+último commit antes de hacer merge; los comentarios que llegan en paralelo al merge se pierden si no se
+revisan después. En reglas de Firestore, restringir *qué subcampos* puede cambiar un usuario (no solo
+*qué entrada*) es clave cuando esos subcampos definen privilegios (rol, asiento).

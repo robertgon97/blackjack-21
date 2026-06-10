@@ -254,7 +254,10 @@ class FirestoreSalaRepository implements ISalaRepository {
     for (var i = 0; i < 6; i++) {
       if (!asientos.contains(i)) return i;
     }
-    return asientos.length;
+    // No debería ocurrir: unirseASala ya valida estaLlena antes de llamar aquí.
+    // Si pasa, es un error de lógica y se falla explícito en vez de devolver un
+    // asiento inválido (asientos.length).
+    throw StateError('No hay asientos libres en la sala.');
   }
 
   String _mensajeError(String? code, String? message) => switch (code) {
