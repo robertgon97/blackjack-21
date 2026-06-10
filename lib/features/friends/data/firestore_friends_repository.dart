@@ -120,8 +120,8 @@ class FirestoreFriendsRepository implements IFriendsRepository {
         'monto': monto,
       });
       await _telemetria.evento('transferencia', params: {'monto': monto});
-    } on FirebaseFunctionsException catch (e) {
-      await _telemetria.registrarError(e, null);
+    } on FirebaseFunctionsException catch (e, s) {
+      await _telemetria.registrarError(e, s);
       // Se traduce aquí para que la capa de presentación no dependa del paquete
       // cloud_functions ni conozca los códigos de error de Firebase.
       throw Exception(_mensajeTransferencia(e.code, e.message));

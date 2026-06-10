@@ -101,7 +101,7 @@ class FirestoreSalaRepository implements ISalaRepository {
       'sala_creada',
       params: {
         'sala_id': ref.id,
-        'privada': privada.toString(),
+        'privada': privada,
         'max_jugadores': maxJugadores,
       },
     );
@@ -229,8 +229,8 @@ class FirestoreSalaRepository implements ISalaRepository {
           .httpsCallable('startRound')
           .call<void>({'roomId': roomId});
       await _telemetria.evento('ronda_iniciada', params: {'sala_id': roomId});
-    } on FirebaseFunctionsException catch (e) {
-      await _telemetria.registrarError(e, null);
+    } on FirebaseFunctionsException catch (e, s) {
+      await _telemetria.registrarError(e, s);
       throw Exception(_mensajeError(e.code, e.message));
     }
   }
@@ -254,8 +254,8 @@ class FirestoreSalaRepository implements ISalaRepository {
           'sala_id': roomId,
         },
       );
-    } on FirebaseFunctionsException catch (e) {
-      await _telemetria.registrarError(e, null);
+    } on FirebaseFunctionsException catch (e, s) {
+      await _telemetria.registrarError(e, s);
       throw Exception(_mensajeError(e.code, e.message));
     }
   }

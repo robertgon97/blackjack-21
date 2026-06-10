@@ -12,8 +12,10 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Engancha los errores de Flutter y de Dart a Crashlytics.
-  // Solo en plataformas soportadas: Crashlytics no funciona en Web ni Windows.
-  if (!kIsWeb && defaultTargetPlatform != TargetPlatform.windows) {
+  // Solo en plataformas soportadas: no funciona en Web, Windows ni Linux.
+  if (!kIsWeb &&
+      defaultTargetPlatform != TargetPlatform.windows &&
+      defaultTargetPlatform != TargetPlatform.linux) {
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
