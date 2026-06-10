@@ -188,3 +188,24 @@ solo restrictivo (no un agujero), anotado para revisión futura.
 último commit antes de hacer merge; los comentarios que llegan en paralelo al merge se pierden si no se
 revisan después. En reglas de Firestore, restringir *qué subcampos* puede cambiar un usuario (no solo
 *qué entrada*) es clave cuando esos subcampos definen privilegios (rol, asiento).
+
+---
+
+## 2026-06-10 — Regresión del propio fix de seguridad (review del PR #15)
+
+**Qué falló:** la corrección anterior de `soloActualizaSuJugador` (exigir que `isSpectator`/`seat` no
+cambien) **rompió `salirDeSala`** para miembros no-host: salir borra la propia entrada con
+`FieldValue.delete()`, por lo que `request.resource.data.players[uid]` deja de existir; en Firebase
+Rules v2 `null.isSpectator` es `null` y `null == valor` es `false`, así que la regla denegaba la
+salida. Además el review marcó: el `catch` del botón «Salir» mostraba `$e` crudo (filtra detalles
+internos), un comentario que narraba el bug corregido (rota con el tiempo), y un comentario de 3
+líneas que excede el límite de una línea del repo.
+
+**Corrección:** `soloActualizaSuJugador` admite ahora dos casos — `!(uid in
+request.resource.data.players)` (el jugador sale/borra su entrada) **o** que `isSpectator`/`seat` no
+cambien (edición sin escalar privilegios). El SnackBar usa un mensaje genérico sin `$e`. Comentarios
+recortados a invariantes de una línea. Reglas revalidadas en el emulador.
+
+**Aprendizaje:** al endurecer una regla que compara subcampos del documento, considerar el caso de
+**borrado** (el subdocumento deja de existir → acceder a sus campos da `null`): hay que exceptuarlo
+explícitamente o se bloquean operaciones legítimas como salir.

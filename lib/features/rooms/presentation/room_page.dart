@@ -597,10 +597,9 @@ class _FaseResultados extends ConsumerWidget {
               try {
                 await ref.read(salaActionsProvider(sala.id)).salir();
                 if (context.mounted) context.pop();
-              } catch (e) {
-                // Un fallo de red dejaba la pantalla congelada sin feedback.
+              } catch (_) {
                 messenger.showSnackBar(
-                  SnackBar(content: Text('No se pudo salir: $e')),
+                  const SnackBar(content: Text('No se pudo salir de la sala.')),
                 );
               }
             },

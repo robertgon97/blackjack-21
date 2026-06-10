@@ -115,12 +115,12 @@ service cloud.firestore {
         return autenticado() && request.auth.uid == resource.data.hostUid;
       }
 
-      // ¿El write toca solo el mapa players y solo la entrada del propio uid?
+      // El write toca solo el mapa players y solo la entrada del propio uid.
       // Bloqueado durante 'playing': en esa fase las acciones (apuesta/ready)
       // las gestionan las Cloud Functions sobre games/, no el cliente.
-      // Además, el jugador NO puede cambiar su rol (isSpectator) ni su asiento
-      // (seat): un espectador no debe poder colarse como jugador activo sin pasar
-      // por el alta controlada. Solo puede tocar apuesta/ready/connected.
+      // Dos casos válidos: (a) el jugador sale (borra su propia entrada), o
+      // (b) edita su entrada sin cambiar rol (isSpectator) ni asiento (seat),
+      // para que un espectador no pueda colarse como jugador activo.
       function soloActualizaSuJugador() {
         let uid = request.auth.uid;
         let changed = request.resource.data.diff(resource.data).affectedKeys();
@@ -130,8 +130,11 @@ service cloud.firestore {
           resource.data.status != 'playing' &&
           request.resource.data.players.diff(resource.data.players)
             .affectedKeys().hasOnly([uid]) &&
-          despues.isSpectator == antes.isSpectator &&
-          despues.seat == antes.seat;
+          (
+            !(uid in request.resource.data.players) ||
+            (despues.isSpectator == antes.isSpectator &&
+             despues.seat == antes.seat)
+          );
       }
 
       // ¿El write agrega al propio uid en players sin tocar nada más?
