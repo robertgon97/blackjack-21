@@ -30,6 +30,25 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 30
 
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Instalar firebase-tools
+        run: npm install -g firebase-tools@13
+
+      - name: Distribuir APK debug a App Distribution
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          firebase appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-debug.apk \
+            --app 1:822375769128:android:adc9972274f9770c92011d \
+            --groups "testers-internos" \
+            --release-notes "debug/${BRANCH} · ${COMMIT_SHA:0:7}" \
+            --project blackjack-21-app
+
   windows:
     name: Build Windows (release)
     runs-on: windows-latest

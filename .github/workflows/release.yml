@@ -69,6 +69,26 @@ jobs:
       - name: Build App Bundle firmado (Play Store)
         run: flutter build appbundle --release --build-name=${{ steps.version.outputs.name }} --build-number=${{ github.run_number }}
 
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Instalar firebase-tools
+        run: npm install -g firebase-tools@13
+
+      - name: Distribuir APK firmado a App Distribution
+        continue-on-error: true
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          firebase appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app 1:822375769128:android:adc9972274f9770c92011d \
+            --groups "testers-internos" \
+            --release-notes "v${VERSION} (build ${BUILD_NUMBER})" \
+            --project blackjack-21-app
+
       - name: Subir artefactos a la Release
         uses: softprops/action-gh-release@v2
         with:
