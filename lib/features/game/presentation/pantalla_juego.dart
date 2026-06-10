@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/temas.dart';
 import '../../../core/utils/formato.dart';
+import '../../auth/presentation/widgets/banner_conversion.dart';
 import 'controlador_juego.dart';
 import 'estado_juego.dart';
 import 'widgets/barra_estado.dart';
@@ -61,6 +62,7 @@ class PantallaJuego extends ConsumerWidget {
             child: Column(
               children: [
                 const BarraEstado(),
+                const BannerConversion(),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(

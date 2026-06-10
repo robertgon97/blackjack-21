@@ -13,3 +13,8 @@ final authRepositoryProvider = Provider<IAuthRepository>(
 final perfilStreamProvider = StreamProvider<PerfilUsuario?>(
   (ref) => ref.watch(authRepositoryProvider).perfilStream,
 );
+
+/// Si el usuario descartó el banner de conversión en esta sesión. Vive a nivel
+/// de app (no del widget) para que no reaparezca al recrear `BannerConversion`
+/// —p. ej. al volver de `/convertir`—.
+final bannerConversionDescartadoProvider = StateProvider<bool>((_) => false);

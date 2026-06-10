@@ -28,6 +28,19 @@ abstract interface class IAuthRepository {
   /// Login con Google.
   Future<PerfilUsuario> entrarConGoogle();
 
+  /// Convierte la cuenta anónima actual en permanente vinculando email/contraseña
+  /// (account linking). Conserva el mismo `uid` y acredita el bono de conversión.
+  /// Lanza una excepción con mensaje en español si la vinculación falla.
+  Future<PerfilUsuario> vincularConEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  });
+
+  /// Convierte la cuenta anónima actual en permanente vinculando Google.
+  /// Conserva el mismo `uid` y acredita el bono de conversión.
+  Future<PerfilUsuario> vincularConGoogle();
+
   /// Cierra la sesión actual.
   Future<void> salir();
 }

@@ -183,3 +183,11 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > (enviar/aceptar/rechazar/cancelar), transferencias atómicas entre amigos vía Cloud Function
 > `transferCredits`. Repos: `features/friends/`. Functions: `functions/src/transfers.ts`.
 > Ficha: [`docs/features/social.md`](docs/features/social.md).
+>
+> **Hecho en Fase 3.5:** conversión de cuenta anónima → permanente (account linking) conservando el
+> `uid`, con bono +500 idempotente vía Cloud Function `claimConversionBonus`
+> (`functions/src/conversion.ts`). UI: `pantalla_conversion.dart` + `banner_conversion.dart`, ruta
+> `/convertir`, y advertencia al cerrar sesión siendo anónimo (CU-5) en el panel de ajustes.
+> `firestore.rules` protege `isAnonymous`/`conversionBonusGranted`. El despliegue es **automático
+> al mergear a main** (workflow `deploy-firebase.yml` → jobs Firestore + Functions + Hosting; Blaze
+> ya activo). Ficha: [`docs/features/conversion-cuenta.md`](docs/features/conversion-cuenta.md).

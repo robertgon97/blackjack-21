@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_provider.dart';
+import '../../features/auth/presentation/pantalla_conversion.dart';
 import '../../features/auth/presentation/pantalla_login.dart';
 import '../../features/friends/domain/contacto.dart';
 import '../../features/friends/presentation/friends_page.dart';
@@ -27,6 +28,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (_, __) => const PantallaLogin(),
+      ),
+      // Accesible con sesión activa; el redirect solo expulsa de /login, así que
+      // un usuario anónimo (perfil != null) puede llegar aquí sin ser desviado.
+      GoRoute(
+        path: '/convertir',
+        builder: (_, __) => const PantallaConversion(),
       ),
       GoRoute(
         path: '/',
