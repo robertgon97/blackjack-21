@@ -124,7 +124,7 @@ class _RoomPageState extends ConsumerState<RoomPage> {
             child: SafeArea(
               child: Column(
                 children: [
-                  _BarraSala(sala: sala, miUid: uid, onSalir: _salir),
+                  _BarraSala(sala: sala, onSalir: _salir),
                   if (_errorAccion != null)
                     _BannerError(
                       mensaje: _errorAccion!,
@@ -153,17 +153,14 @@ class _RoomPageState extends ConsumerState<RoomPage> {
 class _BarraSala extends ConsumerWidget {
   const _BarraSala({
     required this.sala,
-    required this.miUid,
     required this.onSalir,
   });
 
   final Sala sala;
-  final String miUid;
   final VoidCallback onSalir;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final esHost = sala.hostUid == miUid;
     final activos = sala.jugadoresActivos.length;
 
     return Container(
@@ -195,21 +192,9 @@ class _BarraSala extends ConsumerWidget {
               ],
             ),
           ),
-          if (esHost && sala.status == EstadoSala.waiting)
-            FilledButton.icon(
-              onPressed: () => ref
-                  .read(salaActionsProvider(sala.id))
-                  .cambiarEstado(EstadoSala.betting),
-              icon: const Icon(Icons.play_arrow, size: 18),
-              label: const Text('Iniciar apuestas'),
-              style: FilledButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                textStyle: const TextStyle(fontSize: 13),
-              ),
-            )
-          else
-            _CodigoInvitacion(code: sala.inviteCode),
+          // La acción de iniciar apuestas vive en el cuerpo (_FaseEspera);
+          // la barra solo muestra el código de invitación para no duplicarla.
+          _CodigoInvitacion(code: sala.inviteCode),
         ],
       ),
     );
@@ -549,7 +534,7 @@ class _FaseJuego extends ConsumerWidget {
             partida: partida,
             miUid: miUid,
             timerSeg: timerSeg,
-            onAccion: (a) => onAccion(a),
+            onAccion: onAccion,
           ),
         );
       },
@@ -608,8 +593,15 @@ class _FaseResultados extends ConsumerWidget {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: () async {
-              await ref.read(salaActionsProvider(sala.id)).salir();
-              if (context.mounted) context.pop();
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await ref.read(salaActionsProvider(sala.id)).salir();
+                if (context.mounted) context.pop();
+              } catch (_) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('No se pudo salir de la sala.')),
+                );
+              }
             },
             style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
             child: const Text('Salir de la sala'),
