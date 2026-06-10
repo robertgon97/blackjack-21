@@ -14,6 +14,7 @@ class PantallaConversion extends ConsumerStatefulWidget {
 }
 
 class _PantallaConversionState extends ConsumerState<PantallaConversion> {
+  static final _kRegexEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
@@ -74,6 +75,9 @@ class _PantallaConversionState extends ConsumerState<PantallaConversion> {
 
   void _alExito() {
     if (!mounted) return;
+    // Descarta el banner antes de navegar: evita que parpadee entre el
+    // context.go('/') y el primer emit de perfilStream con isAnonymous:false.
+    ref.read(bannerConversionDescartadoProvider.notifier).state = true;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -162,11 +166,10 @@ class _PantallaConversionState extends ConsumerState<PantallaConversion> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email),
                     ),
-                    validator: (v) => (v == null ||
-                            !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                                .hasMatch(v.trim()))
-                        ? 'Email inválido'
-                        : null,
+                    validator: (v) =>
+                        (v == null || !_kRegexEmail.hasMatch(v.trim()))
+                            ? 'Email inválido'
+                            : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(

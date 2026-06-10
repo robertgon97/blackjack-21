@@ -23,7 +23,9 @@ export const claimConversionBonus = onCall(
     }
 
     // El token debe haber dejado de ser anónimo (la conversión ya ocurrió).
-    const provider = request.auth.token.firebase?.sign_in_provider;
+    // Con tokens custom el claim `firebase` puede faltar; el default evita que
+    // un provider undefined pase silenciosamente (la guarda (2) lo contiene).
+    const provider = request.auth.token.firebase?.sign_in_provider ?? 'unknown';
     if (provider === 'anonymous') {
       throw new HttpsError(
         'failed-precondition',

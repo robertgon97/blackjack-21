@@ -334,6 +334,8 @@ class FirebaseAuthRepository implements IAuthRepository {
           'La sesión de seguridad ha expirado y no es posible completar la '
               'conversión ahora. Tu progreso del demo sigue activo; puedes seguir '
               'jugando.',
+        'network-request-failed' =>
+          'Sin conexión. Comprueba tu red e inténtalo de nuevo.',
         _ => 'No se pudo crear la cuenta. Intenta de nuevo.',
       };
 }
