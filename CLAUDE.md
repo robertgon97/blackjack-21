@@ -135,9 +135,11 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 
 | Archivo | Disparador | Qué hace |
 |---------|-----------|----------|
-| `ci.yml` | push/PR a main | format + analyze + test |
+| `ci.yml` | push/PR a main | **Analyze & Test** (format + analyze --fatal-infos + test+coverage) y **Lint & Build Functions** (ESLint + tsc) |
 | `deploy-web.yml` | push a main | build web → GitHub Pages |
-| `release.yml` | tag `v*` | APK Android + build iOS sin firma |
+| `deploy-firebase.yml` | push a main | 3 jobs en paralelo: Firestore (reglas+índices), **Functions** y Hosting |
+| `build-artifacts.yml` | push a main + manual | APK **debug** (Android) + build **Windows** release (artefactos, 30 días) |
+| `release.yml` | tag `v*` | **APK + AAB firmados** + iOS sin firma; versión dinámica desde el tag (`versionName`) y `run_number` (`versionCode`) |
 
 > En GitHub Pages: Settings → Pages → Source → **"GitHub Actions"** (acción manual, una sola vez).
 
