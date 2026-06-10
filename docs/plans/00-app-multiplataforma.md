@@ -75,11 +75,19 @@ opcional para ver reacciones).
 | 3 | Auth + perfil + saldo persistente | ✅ |
 | 3.5 | Conversión de cuenta anónima → permanente (account linking + bono) | ✅ |
 | 4 | Social: amigos y transferencias | ✅ |
-| 5 | Salas multijugador en tiempo real | ⬜ |
+| 5 | Salas multijugador en tiempo real | ✅ |
 | 6 | Comunicación en sala (chat + voz + cámara) | ⬜ |
 | 7 | Monetización y pulido (anuncios, leaderboard, PWA, push) | ⬜ |
+| 8 | Observabilidad base: Crashlytics + Analytics (full) | ⬜ |
+| 9 | Endurecimiento del backend: App Check | ⬜ |
+| 10 | Configuración remota y experimentos: Remote Config + A/B Testing | ⬜ |
+| 11 | Distribución y calidad de builds: App Distribution + Test Lab | ⬜ |
 
 > Leyenda: ⬜ pendiente · 🚧 en curso · ✅ hecho. Actualizar al avanzar.
+>
+> Las fases **8–11** (sacar provecho del resto de Firebase) están detalladas en
+> [`01-firebase-observabilidad-y-crecimiento.md`](01-firebase-observabilidad-y-crecimiento.md).
+> Son fases pequeñas y autónomas; **Windows queda fuera** de estos servicios (ver ese documento).
 
 **Cierre de cada fase:** `dart format` + `flutter analyze` + `flutter test` en verde, ficha en
 `docs/features/` y reglas en `docs/reglas-negocio/` creadas/actualizadas, README + CLAUDE.md al día, y
