@@ -11,6 +11,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/telemetria/telemetria_provider.dart';
 import '../domain/cartas.dart';
 import '../domain/estrategia.dart';
 import '../domain/modelos.dart';
@@ -30,9 +31,11 @@ const int _pausaCrupier = 620;
 
 class ControladorJuego extends Notifier<EstadoJuego> {
   late Shoe _shoe;
+  late IServicioTelemetria _telemetria;
 
   @override
   EstadoJuego build() {
+    _telemetria = ref.read(servicioTelemetriaProvider);
     const config = ConfigJuego();
     _shoe = Shoe(config.numBarajas);
     final estado = EstadoJuego.inicial(config);
@@ -152,6 +155,8 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     }
 
     final apuesta = state.apuesta;
+    await _telemetria.evento('apuesta_realizada', params: {'monto': apuesta});
+    await _telemetria.evento('ronda_iniciada');
     state = state.copyWith(
       fase: FaseJuego.jugando,
       animando: true,
@@ -251,6 +256,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     final hayBlackjack = calcularPuntos(state.manoCrupier) == 21 ||
         calcularPuntos(state.manos[0].cartas) == 21;
     if (hayBlackjack) {
+      await _telemetria.evento('blackjack');
       state = state.copyWith(animando: true);
       _revelarCrupier();
       await _pausa(600);
@@ -356,6 +362,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   Future<void> pedir() async {
     if (state.fase != FaseJuego.jugando || state.animando) return;
     _chequearEntrenamiento(Jugada.pedir);
+    await _telemetria.evento('accion_jugador', params: {'accion': 'pedir'});
     state = state.copyWith(animando: true, consejo: '', probabilidad: '');
 
     await _darCartaJugador(state.indiceMano);
@@ -379,6 +386,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     if (state.fase != FaseJuego.jugando || state.animando) return;
     if (!state.opcionesActivas.puedeDoblar) return;
     _chequearEntrenamiento(Jugada.doblar);
+    await _telemetria.evento('accion_jugador', params: {'accion': 'doblar'});
 
     final i = state.indiceMano;
     final mano = state.manos[i];
@@ -406,6 +414,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     if (state.fase != FaseJuego.jugando || state.animando) return;
     if (!state.opcionesActivas.puedeDividir) return;
     _chequearEntrenamiento(Jugada.dividir);
+    await _telemetria.evento('accion_jugador', params: {'accion': 'dividir'});
 
     final i = state.indiceMano;
     final mano = state.manos[i];
@@ -442,6 +451,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     if (state.fase != FaseJuego.jugando || state.animando) return;
     if (!state.opcionesActivas.puedeRendirse) return;
     _chequearEntrenamiento(Jugada.rendirse);
+    await _telemetria.evento('accion_jugador', params: {'accion': 'rendirse'});
 
     final i = state.indiceMano;
     final manos = [...state.manos];
@@ -460,6 +470,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   Future<void> plantarse() async {
     if (state.fase != FaseJuego.jugando || state.animando) return;
     _chequearEntrenamiento(Jugada.plantarse);
+    await _telemetria.evento('accion_jugador', params: {'accion': 'plantarse'});
     state = state.copyWith(animando: true, consejo: '', probabilidad: '');
     await _avanzarMano();
   }
@@ -540,6 +551,16 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     final pc = calcularPuntos(state.manoCrupier);
     final textoCrupier = pc > 21 ? 'se pasó ($pc)' : '$pc';
     final mensaje = 'Crupier: $textoCrupier. ${partes.join(' · ')}';
+
+    _telemetria.evento(
+      'mano_resuelta',
+      params: {
+        'resultado':
+            netoTotal > 0 ? 'ganar' : (netoTotal < 0 ? 'perder' : 'empate'),
+        'neto': netoTotal,
+      },
+    );
+    if (banca == 0) _telemetria.evento('saldo_agotado');
 
     state = _conInfoShoe(
       state.copyWith(

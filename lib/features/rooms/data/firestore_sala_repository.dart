@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../../core/telemetria/data/noop_telemetria.dart';
+import '../../../core/telemetria/domain/i_servicio_telemetria.dart';
 import '../domain/i_sala_repository.dart';
 import '../domain/modelos.dart';
 
@@ -11,12 +13,15 @@ class FirestoreSalaRepository implements ISalaRepository {
   FirestoreSalaRepository({
     FirebaseFirestore? db,
     FirebaseFunctions? functions,
+    IServicioTelemetria? telemetria,
   })  : _db = db ?? FirebaseFirestore.instance,
         _functions = functions ??
-            FirebaseFunctions.instanceFor(region: 'southamerica-east1');
+            FirebaseFunctions.instanceFor(region: 'southamerica-east1'),
+        _telemetria = telemetria ?? const NoopTelemetria();
 
   final FirebaseFirestore _db;
   final FirebaseFunctions _functions;
+  final IServicioTelemetria _telemetria;
 
   // ── Lobby ────────────────────────────────────────────────────────────────
 
@@ -92,6 +97,14 @@ class FirestoreSalaRepository implements ISalaRepository {
       'currentGameId': null,
       'createdAt': FieldValue.serverTimestamp(),
     });
+    await _telemetria.evento(
+      'sala_creada',
+      params: {
+        'sala_id': ref.id,
+        'privada': privada.toString(),
+        'max_jugadores': maxJugadores,
+      },
+    );
     return ref.id;
   }
 
@@ -137,6 +150,13 @@ class FirestoreSalaRepository implements ISalaRepository {
       );
       tx.update(ref, {'players.$uid': jugador.toMap()});
     });
+    await _telemetria.evento(
+      'sala_unida',
+      params: {
+        'sala_id': roomId,
+        'tipo': comoEspectador ? 'espectador' : 'jugador',
+      },
+    );
   }
 
   @override
@@ -208,7 +228,9 @@ class FirestoreSalaRepository implements ISalaRepository {
       await _functions
           .httpsCallable('startRound')
           .call<void>({'roomId': roomId});
+      await _telemetria.evento('ronda_iniciada', params: {'sala_id': roomId});
     } on FirebaseFunctionsException catch (e) {
+      await _telemetria.registrarError(e, null);
       throw Exception(_mensajeError(e.code, e.message));
     }
   }
@@ -225,7 +247,15 @@ class FirestoreSalaRepository implements ISalaRepository {
         'accion': accion,
         if (manoIdx != null) 'manoIdx': manoIdx,
       });
+      await _telemetria.evento(
+        'accion_jugador',
+        params: {
+          'accion': accion,
+          'sala_id': roomId,
+        },
+      );
     } on FirebaseFunctionsException catch (e) {
+      await _telemetria.registrarError(e, null);
       throw Exception(_mensajeError(e.code, e.message));
     }
   }
