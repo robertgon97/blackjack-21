@@ -82,12 +82,19 @@ opcional para ver reacciones).
 | 9 | Endurecimiento del backend: App Check | ⬜ |
 | 10 | Configuración remota y experimentos: Remote Config + A/B Testing | ⬜ |
 | 11 | Distribución y calidad de builds: App Distribution + Test Lab | ⬜ |
+| 12 | Perfil + estadísticas de juego (server-side) | ⬜ |
+| 13 | Progresión: niveles/XP + logros (migra `stats.js`) | ⬜ |
+| 14 | Leaderboards semanales + top de amigos + bono diario + misiones | ⬜ |
 
 > Leyenda: ⬜ pendiente · 🚧 en curso · ✅ hecho. Actualizar al avanzar.
 >
 > Las fases **8–11** (sacar provecho del resto de Firebase) están detalladas en
 > [`01-firebase-observabilidad-y-crecimiento.md`](01-firebase-observabilidad-y-crecimiento.md).
-> Son fases pequeñas y autónomas; **Windows queda fuera** de estos servicios (ver ese documento).
+> Las fases **12–14** (perfil, progresión y leaderboards — el "sabor" de app de juego) están en
+> [`02-perfil-progresion-y-leaderboards.md`](02-perfil-progresion-y-leaderboards.md).
+> Todas son fases pequeñas y autónomas. **Nota de orden:** los números son orientativos; el bloque de
+> **producto (12–14)** puede priorizarse antes que la infraestructura (9–11), y el perfil tiene
+> sinergia con Analytics (Fase 8). **Windows queda fuera** de los servicios Firebase de las fases 8–11.
 
 **Cierre de cada fase:** `dart format` + `flutter analyze` + `flutter test` en verde, ficha en
 `docs/features/` y reglas en `docs/reglas-negocio/` creadas/actualizadas, README + CLAUDE.md al día, y
