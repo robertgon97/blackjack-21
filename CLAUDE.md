@@ -169,9 +169,7 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 - Riverpod providers para las features que faltan (comms, profile…)
 - `freezed` para los modelos (hoy son inmutables con `copyWith` a mano)
 - Fichas de `docs/features/` para las features restantes (comms, profile…)
-- **Fase 6 (siguiente):** observabilidad base — Crashlytics + Analytics (ver
-  `docs/plans/01-firebase-observabilidad-y-crecimiento.md`). Hoja de ruta completa de fases 6–14 en
-  `docs/plans/`.
+- **Fase 7 (siguiente):** App Check + hardening de seguridad. Hoja de ruta completa en `docs/plans/`.
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
@@ -200,5 +198,11 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > `games/{id}/serverData/current` (`allow read: if false`). Flujo waiting→betting→playing→finished,
 > reglas granulares por rol en `rooms`. Ficha: [`docs/features/rooms.md`](docs/features/rooms.md).
 >
-> **Siguiente — Fases 6–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
-> (observabilidad, App Check, perfil/progresión/leaderboards, monetización, comunicación…).
+> **Hecho en Fase 6:** observabilidad base — Crashlytics (Android/iOS) + Analytics (Android/iOS/Web).
+> Capa `core/telemetria/` con interfaz `IServicioTelemetria`, implementación Firebase y no-op para
+> Windows/Linux. Hooks globales de error en `main.dart`, observer de navegación, toggle de privacidad
+> en `PanelAjustes`, eventos de juego/sala/social. Issues abiertos: #18, #19, #20.
+> Ficha: [`docs/features/observabilidad.md`](docs/features/observabilidad.md).
+>
+> **Siguiente — Fases 7–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
+> (App Check, perfil/progresión/leaderboards, monetización, comunicación…).
