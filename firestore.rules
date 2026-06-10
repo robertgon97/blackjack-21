@@ -109,21 +109,43 @@ service cloud.firestore {
     // ---------- rooms ----------
     match /rooms/{roomId} {
       function esMiembro() {
-        return autenticado() &&
-          request.auth.uid in resource.data.players;
+        return autenticado() && request.auth.uid in resource.data.players;
       }
       function esHost() {
         return autenticado() && request.auth.uid == resource.data.hostUid;
       }
 
+      // ¿El write toca solo el mapa players y solo la entrada del propio uid?
+      function soloActualizaSuJugador() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return changed.hasOnly(['players']) &&
+          request.resource.data.players.diff(resource.data.players)
+            .affectedKeys().hasOnly([request.auth.uid]);
+      }
+
+      // ¿El write agrega al propio uid en players sin tocar nada más?
+      // Solo se permite si la sala está en waiting/betting y hay asientos libres.
+      function seUneSolo() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        let currentSize = resource.data.players.size();
+        return changed.hasOnly(['players']) &&
+          !(request.auth.uid in resource.data.players) &&
+          request.resource.data.players.diff(resource.data.players)
+            .affectedKeys().hasOnly([request.auth.uid]) &&
+          currentSize < resource.data.maxPlayers &&
+          (resource.data.status == 'waiting' || resource.data.status == 'betting');
+      }
+
       // Salas públicas las ve cualquiera autenticado; las privadas, solo miembros.
       allow read: if autenticado() && (resource.data.private == false || esMiembro());
 
-      // El host crea su sala.
+      // El host crea su sala (hostUid debe coincidir con el caller).
       allow create: if autenticado() && request.resource.data.hostUid == request.auth.uid;
 
-      // Host o jugadores actualizan la sala (refinar campos permitidos en Fase 5).
-      allow update: if esHost() || esMiembro();
+      // El host puede actualizar cualquier campo.
+      // Los miembros solo pueden actualizar su propia entrada en players.
+      // Cualquier usuario autenticado puede unirse (seUneSolo).
+      allow update: if esHost() || (esMiembro() && soloActualizaSuJugador()) || (autenticado() && seUneSolo());
 
       allow delete: if esHost();
 
@@ -137,11 +159,18 @@ service cloud.firestore {
     }
 
     // ---------- games ----------
-    // El reparto y la resolución los hacen las Functions (anti-trampa).
+    // El reparto, las acciones y la resolución los hacen las Functions (anti-trampa).
+    // Los clientes pueden leer el estado público de la partida (sin el shoe).
     match /games/{gameId} {
       allow read: if autenticado() &&
-        request.auth.uid in get(/databases/$(database)/documents/games/$(gameId)).data.players;
+        request.auth.uid in resource.data.players;
       allow write: if false;
+
+      // El shoe y el estado del server son solo para Functions (Admin SDK).
+      match /serverData/{doc} {
+        allow read: if false;
+        allow write: if false;
+      }
     }
   }
 }

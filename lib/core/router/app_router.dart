@@ -9,6 +9,9 @@ import '../../features/friends/domain/contacto.dart';
 import '../../features/friends/presentation/friends_page.dart';
 import '../../features/friends/presentation/transfer_page.dart';
 import '../../features/game/presentation/pantalla_juego.dart';
+import '../../features/rooms/presentation/lobby_page.dart';
+import '../../features/rooms/presentation/room_page.dart';
+import '../../features/rooms/presentation/sala_provider.dart';
 import '../../features/wallet/presentation/historial_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -29,11 +32,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (_, __) => const PantallaLogin(),
       ),
-      // Accesible con sesión activa; el redirect solo expulsa de /login, así que
-      // un usuario anónimo (perfil != null) puede llegar aquí sin ser desviado.
       GoRoute(
         path: '/convertir',
         builder: (_, __) => const PantallaConversion(),
+      ),
+      // Deep link de invitación: busca la sala por código y redirige.
+      GoRoute(
+        path: '/join/:code',
+        redirect: (context, state) async {
+          final code = state.pathParameters['code'] ?? '';
+          final repo = ref.read(salaRepositoryProvider);
+          final sala = await repo.buscarPorCodigo(code);
+          if (sala == null) return '/lobby';
+          return '/room/${sala.id}';
+        },
       ),
       GoRoute(
         path: '/',
@@ -53,6 +65,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                     TransferPage(contacto: state.extra! as Contacto),
               ),
             ],
+          ),
+          GoRoute(
+            path: 'lobby',
+            builder: (_, __) => const LobbyPage(),
+          ),
+          GoRoute(
+            path: 'room/:id',
+            builder: (_, state) =>
+                RoomPage(roomId: state.pathParameters['id']!),
           ),
         ],
       ),
