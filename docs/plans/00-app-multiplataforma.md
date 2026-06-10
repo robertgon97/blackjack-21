@@ -145,16 +145,23 @@ verificado por los tests migrados.
 
 ## CI/CD
 
-- `ci.yml` (push+PR): `flutter pub get` → `dart format --set-exit-if-changed .` → `flutter analyze` →
-  `flutter test`.
+- `ci.yml` (push+PR): dos jobs:
+  - **Analyze & Test:** `flutter pub get` → `dart format --set-exit-if-changed .` → `flutter analyze
+    --fatal-infos` → `flutter test` (con coverage).
+  - **Lint & Build Functions:** `npm ci` → `npm run lint` (ESLint) → `npm run build` (tsc) en `functions/`.
 - `deploy-web.yml` (push a main): `flutter build web --release --base-href /blackjack-21/` →
   GitHub Pages.
-- `deploy-firebase.yml` (push a main): dos jobs en paralelo:
+- `deploy-firebase.yml` (push a main): **tres jobs en paralelo**, autenticados con
+  `FIREBASE_SERVICE_ACCOUNT` (secret en GitHub Actions, **nunca en el repo**):
   - Firestore: `firebase deploy --only firestore:rules,firestore:indexes`
+  - **Functions:** `npm ci` (Node 22) → `firebase deploy --only functions`
   - Hosting: `flutter build web --release` → `firebase deploy --only hosting`
-  - Autenticado con `FIREBASE_SERVICE_ACCOUNT` (secret en GitHub Actions, **nunca en el repo**).
-  - Al agregar Functions (Fase 4+): solo extender `--only` con `functions`.
-- `release.yml` (tag `v*`): APK (ubuntu) + iOS sin firmar (macos).
+- `build-artifacts.yml` (push a main + manual): APK **debug** (Android) y build **Windows** release,
+  publicados como artefactos (30 días).
+- `release.yml` (tag `v*`): **APK + AAB firmados** (Android) + iOS sin firmar (macOS). La firma usa el
+  keystore desde `key.properties` (generado de los GitHub Secrets del keystore), y el **versionado es
+  dinámico**: `versionName` sale del tag (`v0.1.0` → `0.1.0`) y `versionCode` del número de ejecución
+  del workflow (entero creciente, requisito de Play Store). Sube los artefactos a una GitHub Release.
 
 > iOS sin firmar valida que compila. Instalar en iPhone real / publicar en App Store requiere cuenta
 > Apple Developer (US$99/año) + firma → paso manual futuro.
@@ -166,5 +173,7 @@ verificado por los tests migrados.
 - ✅ Proyecto Firebase `blackjack-21-app` configurado (Firestore `southamerica-east1`, Auth, Hosting).
 - ✅ `firebase_options.dart` generado con FlutterFire CLI (web, Android, iOS, Windows).
 - ✅ `FIREBASE_SERVICE_ACCOUNT` cargado como secret en GitHub Actions → deploy automático sin intervención manual.
-- ⏳ **Plan Blaze** en Firebase: habilitar si aún no está (necesario para Cloud Functions en Fase 4+).
-- ⏳ Habilitar proveedores Auth en consola Firebase: Email/Password, Google, Anónimo.
+- ✅ **Plan Blaze** activo (Cloud Functions desplegándose en producción desde la Fase 4).
+- ✅ Proveedores Auth habilitados en consola Firebase: Email/Password, Google, Anónimo.
+- ✅ **Firma Android** lista: keystore + 4 GitHub Secrets (`ANDROID_KEYSTORE_*`); `release.yml` firma APK/AAB.
+- ✅ **Google Sign-In Android**: huellas SHA-1/SHA-256 registradas en Firebase (`google-services.json` con OAuth client de tipo 1).
