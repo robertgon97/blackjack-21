@@ -17,14 +17,13 @@ class FichaSala extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final activos = sala.jugadoresActivos;
-    final disponible = sala.status == EstadoSala.waiting ||
-        sala.status == EstadoSala.betting;
+    final disponible =
+        sala.status == EstadoSala.waiting || sala.status == EstadoSala.betting;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Row(
           children: [
             Expanded(
@@ -91,7 +90,8 @@ class _EstadoChip extends StatelessWidget {
       ),
       child: Text(
         texto,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }

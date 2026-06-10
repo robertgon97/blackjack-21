@@ -601,8 +601,7 @@ class _FaseResultados extends ConsumerWidget {
               await ref.read(salaActionsProvider(sala.id)).salir();
               if (context.mounted) context.pop();
             },
-            style:
-                OutlinedButton.styleFrom(foregroundColor: Colors.white),
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
             child: const Text('Salir de la sala'),
           ),
         ],

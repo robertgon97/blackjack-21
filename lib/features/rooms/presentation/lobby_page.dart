@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/formato.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../game/domain/modelos.dart' show ConfigJuego;
 import '../domain/modelos.dart';
 import 'sala_provider.dart';
 import 'widgets/ficha_sala.dart';
@@ -74,8 +75,7 @@ class LobbyPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _unirse(
-      BuildContext context, WidgetRef ref, Sala sala) async {
+  Future<void> _unirse(BuildContext context, WidgetRef ref, Sala sala) async {
     if (!context.mounted) return;
     final perfil = ref.read(perfilStreamProvider).valueOrNull;
     if (perfil == null) return;
@@ -88,7 +88,7 @@ class LobbyPage extends ConsumerWidget {
             balance: perfil.balance,
             comoEspectador: false,
           );
-      if (context.mounted) context.push('/room/${sala.id}');
+      if (context.mounted) await context.push('/room/${sala.id}');
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,7 +131,10 @@ class LobbyPage extends ConsumerWidget {
   }
 
   Future<void> _unirPorCodigo(
-      BuildContext context, WidgetRef ref, String code) async {
+    BuildContext context,
+    WidgetRef ref,
+    String code,
+  ) async {
     if (code.isEmpty) return;
     final repo = ref.read(salaRepositoryProvider);
     final sala = await repo.buscarPorCodigo(code);
@@ -151,9 +154,9 @@ class LobbyPage extends ConsumerWidget {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => _FormCrearSala(
-        onCrear: (sala) async {
+        onCrear: (sala) {
           Navigator.pop(context);
-          context.push('/room/${sala}');
+          context.push('/room/$sala');
         },
       ),
     );
@@ -172,7 +175,7 @@ class _FormCrearSala extends ConsumerStatefulWidget {
 
 class _FormCrearSalaState extends ConsumerState<_FormCrearSala> {
   final _formKey = GlobalKey<FormState>();
-  final _nombreCtrl = TextEditingController(text: 'Mesa de poker');
+  final _nombreCtrl = TextEditingController(text: 'Mesa de blackjack');
 
   int _maxJugadores = 4;
   bool _privada = false;
@@ -258,10 +261,12 @@ class _FormCrearSalaState extends ConsumerState<_FormCrearSala> {
                 DropdownButton<int>(
                   value: _maxJugadores,
                   items: [1, 2, 3, 4, 5, 6]
-                      .map((n) => DropdownMenuItem(
-                            value: n,
-                            child: Text('$n'),
-                          ))
+                      .map(
+                        (n) => DropdownMenuItem(
+                          value: n,
+                          child: Text('$n'),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => setState(() => _maxJugadores = v!),
                 ),
@@ -339,10 +344,12 @@ class _CampoApuesta extends StatelessWidget {
           value: opciones.contains(valor) ? valor : opciones.first,
           isExpanded: true,
           items: opciones
-              .map((v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(dinero(v)),
-                  ))
+              .map(
+                (v) => DropdownMenuItem(
+                  value: v,
+                  child: Text(dinero(v)),
+                ),
+              )
               .toList(),
           onChanged: (v) => onCambio(v!),
         ),

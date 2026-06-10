@@ -77,6 +77,26 @@ export const startRound = onCall(
       }
 
       const config = (room.config as Record<string, unknown>) ?? {};
+
+      // Validar la apuesta de cada jugador contra su balance real (anti-trampa).
+      // Todos los reads ocurren antes de cualquier write (requisito de transacciones).
+      const apuestaMin = (config['apuestaMin'] as number) || 10;
+      const apuestas: Record<string, number> = {};
+      for (const [uid, player] of activePlayers) {
+        apuestas[uid] = (player['apuesta'] as number) || apuestaMin;
+      }
+      const userRefs = activePlayers.map(([uid]) => db.collection('users').doc(uid));
+      const userDocs = await Promise.all(userRefs.map((r) => tx.get(r)));
+      activePlayers.forEach(([uid], i) => {
+        const balance = (userDocs[i].data()?.['balance'] as number) ?? 0;
+        if (apuestas[uid] > balance) {
+          throw new HttpsError(
+            'failed-precondition',
+            `Saldo insuficiente para la apuesta de un jugador.`,
+          );
+        }
+      });
+
       const numBarajas = (config['numBarajas'] as number) || 6;
       const shoe = crearShoe(numBarajas);
       let shoeIdx = 0;
@@ -84,8 +104,8 @@ export const startRound = onCall(
       const dealerCards: Carta[] = [shoe[shoeIdx++], shoe[shoeIdx++]];
 
       const gamePlayers: Record<string, unknown> = {};
-      for (const [uid, player] of activePlayers) {
-        const apuesta = (player['apuesta'] as number) || (config['apuestaMin'] as number) || 10;
+      for (const [uid] of activePlayers) {
+        const apuesta = apuestas[uid];
         gamePlayers[uid] = {
           manos: [
             {

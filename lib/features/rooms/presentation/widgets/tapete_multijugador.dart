@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/utils/formato.dart';
 import '../../../game/domain/cartas.dart';
 import '../../../game/domain/modelos.dart';
 import '../../../game/presentation/widgets/carta_widget.dart';
@@ -27,9 +26,9 @@ class TapeteMultijugador extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final misDatos = partida.players[miUid];
-    final otrosJugadores = partida.players.entries
-        .where((e) => e.key != miUid)
-        .toList();
+    final miBalance = sala.players[miUid]?.balance ?? 0;
+    final otrosJugadores =
+        partida.players.entries.where((e) => e.key != miUid).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -66,6 +65,7 @@ class TapeteMultijugador extends StatelessWidget {
           _MiZona(
             datos: misDatos,
             config: sala.config.configJuego,
+            balance: miBalance,
             timerSeg: timerSeg,
             onAccion: onAccion,
           )
@@ -97,9 +97,7 @@ class _ZonaOtroJugador extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final manoActiva = datos.manos.isNotEmpty ? datos.manos.first : null;
-    final puntos = manoActiva != null
-        ? calcularPuntos(manoActiva.cartas)
-        : 0;
+    final puntos = manoActiva != null ? calcularPuntos(manoActiva.cartas) : 0;
 
     return Container(
       margin: const EdgeInsets.only(right: 12),
@@ -124,9 +122,8 @@ class _ZonaOtroJugador extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
-              children: manoActiva.cartas
-                  .map((c) => _MiniCarta(carta: c))
-                  .toList(),
+              children:
+                  manoActiva.cartas.map((c) => _MiniCarta(carta: c)).toList(),
             ),
             Text(
               '$puntos',
@@ -182,8 +179,7 @@ class _MiniCarta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final roja =
-        carta.palo == Palo.corazones || carta.palo == Palo.diamantes;
+    final roja = carta.palo == Palo.corazones || carta.palo == Palo.diamantes;
     return Container(
       margin: const EdgeInsets.only(right: 2),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -209,12 +205,14 @@ class _MiZona extends StatelessWidget {
   const _MiZona({
     required this.datos,
     required this.config,
+    required this.balance,
     required this.timerSeg,
     required this.onAccion,
   });
 
   final DatosJugadorPartida datos;
   final ConfigJuego config;
+  final int balance;
   final int timerSeg;
   final void Function(String accion) onAccion;
 
@@ -235,8 +233,7 @@ class _MiZona extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (!datos.done && timerSeg > 0)
-            _Temporizador(segundos: timerSeg),
+          if (!datos.done && timerSeg > 0) _Temporizador(segundos: timerSeg),
           const SizedBox(height: 8),
 
           // Mis manos
@@ -267,7 +264,7 @@ class _MiZona extends StatelessWidget {
             _BotonesAccion(
               mano: manoActiva,
               cantidadManos: datos.manos.length,
-              balance: 0, // el balance real viene del perfil; por ahora sin doblar con saldo check
+              balance: balance,
               config: config,
               onAccion: onAccion,
             ),
@@ -280,45 +277,20 @@ class _MiZona extends StatelessWidget {
   }
 }
 
-class _Temporizador extends StatefulWidget {
+/// Muestra los segundos restantes. El contador real (1 Hz) lo lleva
+/// `RoomPage`; aquí solo se renderiza el valor que llega por parámetro,
+/// evitando la deriva de un temporizador independiente.
+class _Temporizador extends StatelessWidget {
   const _Temporizador({required this.segundos});
   final int segundos;
 
   @override
-  State<_Temporizador> createState() => _TemporizadorState();
-}
-
-class _TemporizadorState extends State<_Temporizador>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: Duration(seconds: widget.segundos),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, __) {
-        final restantes = (widget.segundos * (1 - _ctrl.value)).ceil();
-        final color = restantes <= 10 ? Colors.red : Colors.white70;
-        return Text(
-          'Tiempo: ${restantes}s',
-          style: TextStyle(color: color, fontSize: 13),
-        );
-      },
+    final restantes = segundos < 0 ? 0 : segundos;
+    final color = restantes <= 10 ? Colors.red : Colors.white70;
+    return Text(
+      'Tiempo: ${restantes}s',
+      style: TextStyle(color: color, fontSize: 13),
     );
   }
 }
@@ -358,8 +330,11 @@ class _ManoRow extends StatelessWidget {
           if (mano.doblada)
             const Padding(
               padding: EdgeInsets.only(left: 6),
-              child: Icon(Icons.keyboard_double_arrow_up,
-                  color: Colors.amberAccent, size: 18),
+              child: Icon(
+                Icons.keyboard_double_arrow_up,
+                color: Colors.amberAccent,
+                size: 18,
+              ),
             ),
           if (mano.rendida)
             const Padding(
@@ -387,11 +362,15 @@ class _BotonesAccion extends StatelessWidget {
   final ConfigJuego config;
   final void Function(String) onAccion;
 
-  bool get _puedeDoblar => mano.cartas.length == 2 && !mano.doblada;
+  // Doblar y dividir exigen cubrir una apuesta adicional igual a la actual.
+  bool get _saldoCubreApuesta => balance >= mano.apuesta;
+  bool get _puedeDoblar =>
+      mano.cartas.length == 2 && !mano.doblada && _saldoCubreApuesta;
   bool get _puedeDividir =>
       mano.cartas.length == 2 &&
       cantidadManos < 4 &&
-      mano.cartas[0].valor == mano.cartas[1].valor;
+      mano.cartas[0].valor == mano.cartas[1].valor &&
+      _saldoCubreApuesta;
   bool get _puedeRendirse =>
       config.permitirRendirse && mano.cartas.length == 2 && cantidadManos == 1;
 

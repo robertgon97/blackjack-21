@@ -226,8 +226,12 @@ class Sala {
       config: ConfigSala.fromMap(configRaw),
       players: players,
       currentGameId: d['currentGameId'] as String?,
+      // Centinela fijo (epoch 0) si el serverTimestamp aún no se resolvió:
+      // evita usar la hora local del dispositivo, que distorsionaría el orden
+      // descendente del lobby. Una sala recién creada queda al final hasta que
+      // Firestore puebla createdAt.
       createdAt: (d['createdAt'] as dynamic)?.toDate() as DateTime? ??
-          DateTime.now(),
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 }

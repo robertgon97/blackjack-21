@@ -116,9 +116,12 @@ service cloud.firestore {
       }
 
       // ¿El write toca solo el mapa players y solo la entrada del propio uid?
+      // Bloqueado durante 'playing': en esa fase las acciones (apuesta/ready)
+      // las gestionan las Cloud Functions sobre games/, no el cliente.
       function soloActualizaSuJugador() {
         let changed = request.resource.data.diff(resource.data).affectedKeys();
         return changed.hasOnly(['players']) &&
+          resource.data.status != 'playing' &&
           request.resource.data.players.diff(resource.data.players)
             .affectedKeys().hasOnly([request.auth.uid]);
       }

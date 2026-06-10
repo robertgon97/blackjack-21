@@ -21,6 +21,12 @@ interface DatosJugador {
   result: string | null;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Espejo de lib/features/game/domain/cartas.dart · reglas.dart
+// Al cambiar la lógica de puntuación o resolución allá, actualizar también aquí.
+// La duplicación es inevitable (TS ≠ Dart) pero crea riesgo de divergencia.
+// ─────────────────────────────────────────────────────────────────────────────
+
 function calcularPuntos(cartas: Carta[]): number {
   let total = 0;
   let ases = 0;
@@ -175,6 +181,16 @@ export const playerAction = onCall(
 
       const manos: Mano[] = playerData.manos.map((m) => ({ ...m, cartas: [...m.cartas] }));
       const idx = manoIdx ?? playerData.indiceMano;
+
+      // Validar el índice: debe estar en rango y ser la mano que el jugador
+      // tiene activa. No se permite actuar sobre una mano ya jugada o futura.
+      if (!Number.isInteger(idx) || idx < 0 || idx >= manos.length) {
+        throw new HttpsError('invalid-argument', 'Índice de mano fuera de rango.');
+      }
+      if (idx !== playerData.indiceMano) {
+        throw new HttpsError('failed-precondition', 'No es el turno de esa mano.');
+      }
+
       const mano = { ...manos[idx], cartas: [...manos[idx].cartas] };
 
       switch (accion) {
@@ -224,20 +240,32 @@ export const playerAction = onCall(
           ) {
             throw new HttpsError('failed-precondition', 'No puedes dividir ahora.');
           }
-          if (nextIdx >= shoe.length) throw new HttpsError('failed-precondition', 'Shoe agotado.');
+          // La división reparte una carta adicional a CADA mano resultante,
+          // por lo que se necesitan dos cartas disponibles en el shoe.
+          if (nextIdx + 1 >= shoe.length) {
+            throw new HttpsError('failed-precondition', 'Shoe agotado.');
+          }
           const cartaMovida = mano.cartas[1];
           const esAs = cartaMovida.valor === 'A';
+          // Mano original: conserva su primera carta y recibe una nueva.
+          manos[idx] = {
+            ...mano,
+            cartas: [mano.cartas[0], shoe[nextIdx++]],
+            asPartido: esAs,
+          };
+          // Mano nueva: la carta movida + una carta adicional.
           const manoNueva: Mano = {
-            cartas: [cartaMovida],
+            cartas: [cartaMovida, shoe[nextIdx++]],
             apuesta: mano.apuesta,
             doblada: false,
             rendida: false,
             asPartido: esAs,
           };
-          manos[idx] = { ...mano, cartas: [mano.cartas[0], shoe[nextIdx++]], asPartido: esAs };
           manos.splice(idx + 1, 0, manoNueva);
+          // Al dividir ases, cada mano recibe una sola carta y se planta
+          // automáticamente: ambas manos quedan resueltas.
           if (esAs) {
-            playerData.indiceMano = idx + 1;
+            playerData.indiceMano = idx + 2;
             if (playerData.indiceMano >= manos.length) playerData.done = true;
           }
           break;

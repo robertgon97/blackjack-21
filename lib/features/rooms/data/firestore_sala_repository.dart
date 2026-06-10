@@ -29,9 +29,7 @@ class FirestoreSalaRepository implements ISalaRepository {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
-          (snap) => snap.docs
-              .map((d) => Sala.fromDoc(d.id, d.data()))
-              .toList(),
+          (snap) => snap.docs.map((d) => Sala.fromDoc(d.id, d.data())).toList(),
         );
   }
 
@@ -106,32 +104,38 @@ class FirestoreSalaRepository implements ISalaRepository {
     required int balance,
     required bool comoEspectador,
   }) async {
-    // Calcula el próximo asiento libre leyendo la sala primero.
-    final doc = await _db.collection('rooms').doc(roomId).get();
-    if (!doc.exists) throw Exception('La sala no existe.');
-    final sala = Sala.fromDoc(doc.id, doc.data()!);
+    final ref = _db.collection('rooms').doc(roomId);
+    // Transacción: el cálculo del asiento libre y la escritura ocurren de forma
+    // atómica para evitar una race condition por el último asiento.
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (!doc.exists) throw Exception('La sala no existe.');
+      final sala = Sala.fromDoc(doc.id, doc.data()!);
 
-    if (!comoEspectador && sala.estaLlena) {
-      throw Exception('La sala está llena.');
-    }
-    if (sala.status == EstadoSala.playing) {
-      throw Exception('La partida ya comenzó; solo puedes entrar como espectador.');
-    }
+      // Si ya está dentro, no se hace nada (idempotente).
+      if (sala.players.containsKey(uid)) return;
 
-    final seat = comoEspectador
-        ? -1
-        : _proximoAsiento(sala.players.values.toList());
+      if (!comoEspectador && sala.estaLlena) {
+        throw Exception('La sala está llena.');
+      }
+      if (sala.status == EstadoSala.playing) {
+        throw Exception(
+          'La partida ya comenzó; solo puedes entrar como espectador.',
+        );
+      }
 
-    final jugador = JugadorEnSala(
-      uid: uid,
-      displayName: displayName,
-      avatar: avatar,
-      balance: balance,
-      seat: seat,
-      isSpectator: comoEspectador,
-    );
-    await _db.collection('rooms').doc(roomId).update({
-      'players.$uid': jugador.toMap(),
+      final seat =
+          comoEspectador ? -1 : _proximoAsiento(sala.players.values.toList());
+
+      final jugador = JugadorEnSala(
+        uid: uid,
+        displayName: displayName,
+        avatar: avatar,
+        balance: balance,
+        seat: seat,
+        isSpectator: comoEspectador,
+      );
+      tx.update(ref, {'players.$uid': jugador.toMap()});
     });
   }
 
@@ -197,7 +201,9 @@ class FirestoreSalaRepository implements ISalaRepository {
   @override
   Future<void> iniciarRonda({required String roomId}) async {
     try {
-      await _functions.httpsCallable('startRound').call<void>({'roomId': roomId});
+      await _functions
+          .httpsCallable('startRound')
+          .call<void>({'roomId': roomId});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(_mensajeError(e.code, e.message));
     }
@@ -239,10 +245,8 @@ class FirestoreSalaRepository implements ISalaRepository {
   }
 
   int _proximoAsiento(List<JugadorEnSala> jugadores) {
-    final asientos = jugadores
-        .where((j) => !j.isSpectator)
-        .map((j) => j.seat)
-        .toSet();
+    final asientos =
+        jugadores.where((j) => !j.isSpectator).map((j) => j.seat).toSet();
     for (var i = 0; i < 6; i++) {
       if (!asientos.contains(i)) return i;
     }

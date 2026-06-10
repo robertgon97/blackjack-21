@@ -85,7 +85,9 @@ class _PanelApuestasSalaState extends ConsumerState<PanelApuestasSala> {
   void _aviso(String msg) {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
+      ..showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+      );
   }
 
   @override
@@ -124,7 +126,8 @@ class _PanelApuestasSalaState extends ConsumerState<PanelApuestasSala> {
               return ElevatedButton(
                 onPressed: yaListo ? null : () => _sumar(v),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   backgroundColor: Colors.white.withValues(alpha: 0.12),
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white30),
@@ -139,7 +142,10 @@ class _PanelApuestasSalaState extends ConsumerState<PanelApuestasSala> {
             children: [
               TextButton(
                 onPressed: yaListo ? null : () => setState(() => _apuesta = 0),
-                child: const Text('Limpiar', style: TextStyle(color: Colors.white54)),
+                child: const Text(
+                  'Limpiar',
+                  style: TextStyle(color: Colors.white54),
+                ),
               ),
               const SizedBox(width: 16),
               FilledButton.icon(
