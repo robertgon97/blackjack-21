@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../core/telemetria/data/noop_telemetria.dart';
+import '../../../core/telemetria/domain/i_servicio_telemetria.dart';
 import '../domain/i_auth_repository.dart';
 import '../domain/perfil_usuario.dart';
 
@@ -14,16 +16,19 @@ class FirebaseAuthRepository implements IAuthRepository {
     FirebaseFirestore? firestore,
     GoogleSignIn? googleSignIn,
     FirebaseFunctions? functions,
+    IServicioTelemetria? telemetria,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _db = firestore ?? FirebaseFirestore.instance,
         _googleSignIn = googleSignIn ?? GoogleSignIn(),
         _functions = functions ??
-            FirebaseFunctions.instanceFor(region: 'southamerica-east1');
+            FirebaseFunctions.instanceFor(region: 'southamerica-east1'),
+        _telemetria = telemetria ?? const NoopTelemetria();
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _db;
   final GoogleSignIn _googleSignIn;
   final FirebaseFunctions _functions;
+  final IServicioTelemetria _telemetria;
 
   @override
   Stream<PerfilUsuario?> get perfilStream {
@@ -229,6 +234,7 @@ class FirebaseAuthRepository implements IAuthRepository {
     try {
       await user.getIdToken(true);
       await _functions.httpsCallable('claimConversionBonus').call<void>();
+      await _telemetria.evento('bono_conversion');
     } catch (e) {
       debugPrint('Conversión: bono pendiente, se reintentará: $e');
     } finally {

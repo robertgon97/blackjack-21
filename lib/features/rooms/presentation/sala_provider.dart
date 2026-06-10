@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/telemetria/telemetria_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../data/firestore_sala_repository.dart';
 import '../domain/i_sala_repository.dart';
 import '../domain/modelos.dart';
 
-final salaRepositoryProvider = Provider<ISalaRepository>(
-  (_) => FirestoreSalaRepository(),
-);
+final salaRepositoryProvider = Provider<ISalaRepository>((ref) {
+  return FirestoreSalaRepository(
+    telemetria: ref.read(servicioTelemetriaProvider),
+  );
+});
 
 /// Stream de salas públicas para el lobby.
 final salasPublicasProvider = StreamProvider<List<Sala>>((ref) {

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/telemetria/telemetria_provider.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../domain/modelos.dart';
 
@@ -110,6 +111,8 @@ class _PanelAjustesState extends ConsumerState<PanelAjustes> {
                   child: const Text('Guardar'),
                 ),
               ),
+              const Divider(height: 32),
+              _switchPrivacidad(),
               const Divider(height: 32),
               Center(
                 child: TextButton.icon(
@@ -234,6 +237,23 @@ class _PanelAjustesState extends ConsumerState<PanelAjustes> {
       title: Text(texto),
       value: valor,
       onChanged: onChanged,
+    );
+  }
+
+  Widget _switchPrivacidad() {
+    final habilitado = ref.watch(compartirDatosProvider);
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      title: const Text('Compartir datos de uso'),
+      subtitle: const Text(
+        'Envía estadísticas anónimas y reportes de error para mejorar la app.',
+      ),
+      value: habilitado,
+      onChanged: (v) {
+        ref.read(compartirDatosProvider.notifier).state = v;
+        ref.read(servicioTelemetriaProvider).setHabilitado(v);
+      },
     );
   }
 }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_provider.dart';
+import '../telemetria/telemetria_provider.dart';
+import 'router_observer.dart';
 import '../../features/auth/presentation/pantalla_conversion.dart';
 import '../../features/auth/presentation/pantalla_login.dart';
 import '../../features/friends/domain/contacto.dart';
@@ -19,6 +21,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     refreshListenable: perfilListenable,
+    observers: [TelemetriaRouterObserver(ref.read(servicioTelemetriaProvider))],
     initialLocation: '/',
     redirect: (context, state) {
       final perfil = ref.read(perfilStreamProvider).valueOrNull;

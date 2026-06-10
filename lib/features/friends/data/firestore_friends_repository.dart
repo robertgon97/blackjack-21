@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../../core/telemetria/data/noop_telemetria.dart';
+import '../../../core/telemetria/domain/i_servicio_telemetria.dart';
 import '../domain/contacto.dart';
 import '../domain/i_friends_repository.dart';
 import '../domain/resultado_busqueda.dart';
@@ -10,12 +12,15 @@ class FirestoreFriendsRepository implements IFriendsRepository {
   FirestoreFriendsRepository({
     FirebaseFirestore? db,
     FirebaseFunctions? functions,
+    IServicioTelemetria? telemetria,
   })  : _db = db ?? FirebaseFirestore.instance,
         _functions = functions ??
-            FirebaseFunctions.instanceFor(region: 'southamerica-east1');
+            FirebaseFunctions.instanceFor(region: 'southamerica-east1'),
+        _telemetria = telemetria ?? const NoopTelemetria();
 
   final FirebaseFirestore _db;
   final FirebaseFunctions _functions;
+  final IServicioTelemetria _telemetria;
 
   @override
   Stream<List<Contacto>> contactosStream(String uid) {
@@ -90,6 +95,7 @@ class FirestoreFriendsRepository implements IFriendsRepository {
     batch.update(_db.doc('friendships/$myUid/contacts/$friendUid'), update);
     batch.update(_db.doc('friendships/$friendUid/contacts/$myUid'), update);
     await batch.commit();
+    await _telemetria.evento('amigo_agregado');
   }
 
   @override
@@ -113,7 +119,9 @@ class FirestoreFriendsRepository implements IFriendsRepository {
         'toUid': toUid,
         'monto': monto,
       });
-    } on FirebaseFunctionsException catch (e) {
+      await _telemetria.evento('transferencia', params: {'monto': monto});
+    } on FirebaseFunctionsException catch (e, s) {
+      await _telemetria.registrarError(e, s);
       // Se traduce aquí para que la capa de presentación no dependa del paquete
       // cloud_functions ni conozca los códigos de error de Firebase.
       throw Exception(_mensajeTransferencia(e.code, e.message));
