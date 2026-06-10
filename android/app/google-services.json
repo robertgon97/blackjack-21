@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "822375769128-jigas29raqsqa5n3jqv8s957jan58pcf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.robertgon97.blackjack_21",
+            "certificate_hash": "e1a5de0e6445e89d33af1f617cb0dacd8eda5235"
+          }
+        },
+        {
+          "client_id": "822375769128-ofev8kf7odgcgjedfgqodq9csatmjl8k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.robertgon97.blackjack_21",
+            "certificate_hash": "f17001b1e3b13dc682ad3a6f94d4ed0f48f1ac0a"
+          }
+        },
+        {
           "client_id": "822375769128-871tqt5u135giud80tuqqadud0r17g0o.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,6 +45,13 @@
             {
               "client_id": "822375769128-871tqt5u135giud80tuqqadud0r17g0o.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "822375769128-51k7ugqhfvrba2agqu4cme4jeamoc3iu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.robertgon97.blackjack21"
+              }
             }
           ]
         }
