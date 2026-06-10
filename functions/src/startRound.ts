@@ -85,11 +85,25 @@ export const startRound = onCall(
       for (const [uid, player] of activePlayers) {
         apuestas[uid] = (player['apuesta'] as number) || apuestaMin;
       }
+      const apuestaMax = (config['apuestaMax'] as number) || 0;
       const userRefs = activePlayers.map(([uid]) => db.collection('users').doc(uid));
       const userDocs = await Promise.all(userRefs.map((r) => tx.get(r)));
       activePlayers.forEach(([uid], i) => {
         const balance = (userDocs[i].data()?.['balance'] as number) ?? 0;
-        if (apuestas[uid] > balance) {
+        const apuesta = apuestas[uid];
+        if (apuesta < apuestaMin) {
+          throw new HttpsError(
+            'failed-precondition',
+            `Hay una apuesta por debajo del mínimo (${apuestaMin}).`,
+          );
+        }
+        if (apuestaMax > 0 && apuesta > apuestaMax) {
+          throw new HttpsError(
+            'failed-precondition',
+            `Hay una apuesta por encima del máximo (${apuestaMax}).`,
+          );
+        }
+        if (apuesta > balance) {
           throw new HttpsError(
             'failed-precondition',
             `Saldo insuficiente para la apuesta de un jugador.`,

@@ -121,3 +121,36 @@ y se valida antes de `doblar`/`dividir`; el cliente replica ese cálculo en `_Mi
 adicionales (doblar, dividir) debe revalidar contra el saldo disponible descontando lo ya
 comprometido en la ronda. Los efectos secundarios en Flutter (arrancar timers, etc.) van en
 `ref.listen`/`didUpdateWidget`, nunca como asignación dentro de `build()`.
+
+---
+
+## 2026-06-10 — Tercera ronda de review de Fase 5 (PR #12)
+
+**Qué falló:**
+
+1. **`debePedirCrupier` fallaba con 17 suave de varios ases** (`functions/src/playerAction.ts`): la
+   reimplementación detectaba el 17 suave buscando `suma === 6` (cartas no-as). Con manos multi-as
+   válidas (A+A+5 = 17, A+A+A+4 = 17) daba `false`, así que con H17 el crupier se plantaba cuando
+   debía pedir.
+2. **`startRound` no validaba `apuesta >= apuestaMin`** (ni el máximo): solo comprobaba el saldo. Un
+   cliente podía `establecerApuesta(1)` + `marcarListo` y arrancar la ronda por debajo del mínimo.
+3. **`rooms/{id}/players/{uid}.balance` quedaba obsoleto tras cada ronda**: `playerAction` actualizaba
+   `users/{uid}.balance` al resolver, pero no el espejo en `rooms`. En la ronda 2 el panel y la
+   validación client-side de `saldoDisponible` usaban el saldo de cuando el jugador se unió.
+4. **El botón «Salir» fallaba en silencio durante `playing`**: `_salir()` hacía `catch (_) {}` y
+   `context.pop()` igual; las reglas impiden que un miembro borre su entrada en `playing`, así que el
+   jugador salía de la pantalla pero seguía en `players`, ocupando asiento.
+
+**Corrección:** se añade `infoMano` en TS (espejo de `cartas.dart`) y `debePedirCrupier` usa
+`total === 17 && suave && h17`. `startRound` valida `apuestaMin`/`apuestaMax` además del saldo. La
+resolución de `playerAction` refleja el nuevo balance en `rooms/{id}/players/{uid}.balance` dentro de
+la misma transacción. `_salir()` solo hace `pop()` si la salida tuvo éxito; si falla, muestra un
+aviso y mantiene al jugador en la sala.
+
+**Aprendizaje:** las funciones de dominio reimplementadas en TS deben copiar el *algoritmo* del Dart
+(p. ej. `infoMano` calcula "suave" reduciendo ases), no aproximarlo con heurísticas frágiles. Y si un
+dato se duplica entre colecciones (balance en `users` y en `rooms/players`), toda escritura
+autoritativa debe actualizar ambas copias en la misma transacción.
+
+**Pendiente para Fase 6 (mejoras menores del review, no bugs):** fichas de apuesta de
+`PanelApuestasSala` que respeten `apuestaMin`; `salaActionsProvider` con `autoDispose`.

@@ -47,19 +47,34 @@ function calcularPuntos(cartas: Carta[]): number {
   return total;
 }
 
-function debePedirCrupier(cartas: Carta[], h17: boolean): boolean {
-  const total = calcularPuntos(cartas);
-  if (total < 17) return true;
-  if (total > 17) return false;
-  if (!h17) return false;
-  let tieneAs = false;
-  let suma = 0;
+// Espejo de infoMano (cartas.dart): total óptimo y si la mano es "suave"
+// (queda al menos un As contando como 11 tras reducir para no pasarse).
+function infoMano(cartas: Carta[]): { total: number; suave: boolean } {
+  let total = 0;
+  let ases = 0;
   for (const c of cartas) {
-    if (c.valor === 'A') tieneAs = true;
-    else if (['J', 'Q', 'K'].includes(c.valor)) suma += 10;
-    else suma += parseInt(c.valor, 10);
+    if (c.valor === 'A') {
+      total += 11;
+      ases++;
+    } else if (['J', 'Q', 'K'].includes(c.valor)) {
+      total += 10;
+    } else {
+      total += parseInt(c.valor, 10);
+    }
   }
-  return tieneAs && suma === 6;
+  while (total > 21 && ases > 0) {
+    total -= 10;
+    ases--;
+  }
+  return { total, suave: ases > 0 };
+}
+
+function debePedirCrupier(cartas: Carta[], h17: boolean): boolean {
+  const { total, suave } = infoMano(cartas);
+  if (total < 17) return true;
+  // Con H17 el crupier pide en 17 suave (incluye manos multi-as como A+A+5).
+  if (total === 17 && suave && h17) return true;
+  return false;
 }
 
 function resolverMano(
@@ -361,7 +376,11 @@ export const playerAction = onCall(
         updatedAt: FieldValue.serverTimestamp(),
       });
       tx.update(shoeRef, { shoe, nextIdx });
-      tx.update(roomRef, { status: 'finished' });
+
+      // El balance se actualiza en users/{uid} (autoridad) y también se refleja
+      // en rooms/{id}/players/{uid}.balance para que la siguiente ronda muestre y
+      // valide el saldo al día (si no, quedaría el de cuando el jugador se unió).
+      const roomUpdate: Record<string, unknown> = { status: 'finished' };
 
       for (const { uid: pUid, delta, description } of balanceUpdates) {
         const currentBalance = (userDataMap[pUid]?.['balance'] as number) || 0;
@@ -377,7 +396,10 @@ export const playerAction = onCall(
           gameId,
           createdAt: FieldValue.serverTimestamp(),
         });
+        roomUpdate[`players.${pUid}.balance`] = newBalance;
       }
+
+      tx.update(roomRef, roomUpdate);
     });
 
     return { success: true };

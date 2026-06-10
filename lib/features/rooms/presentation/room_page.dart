@@ -63,11 +63,21 @@ class _RoomPageState extends ConsumerState<RoomPage> {
   }
 
   Future<void> _salir() async {
-    _timer?.cancel();
     try {
       await ref.read(salaActionsProvider(widget.roomId)).salir();
-    } catch (_) {}
-    if (mounted) context.pop();
+      _timer?.cancel();
+      if (mounted) context.pop();
+    } catch (_) {
+      // Durante 'playing' las reglas impiden que un miembro borre su entrada.
+      // No salimos en falso (eso dejaría un jugador fantasma ocupando asiento):
+      // avisamos y dejamos que lo intente al terminar la ronda.
+      if (mounted) {
+        setState(() {
+          _errorAccion =
+              'No puedes salir durante la partida. Inténtalo al terminar la ronda.';
+        });
+      }
+    }
   }
 
   @override
