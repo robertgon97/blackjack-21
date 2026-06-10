@@ -1,14 +1,16 @@
 # Plan: Observabilidad, robustez y crecimiento con Firebase
 
-> Documento vivo. Continúa el [plan maestro](00-app-multiplataforma.md) con las fases que sacan
-> provecho del resto de la plataforma Firebase. Cada fase es **pequeña y autónoma** (se puede
-> mergear sola, con su CI en verde y su ficha en [`../features/`](../features/)).
+> Documento vivo. Detalla las fases de este bloque dentro del [plan maestro](00-app-multiplataforma.md).
+> El **orden global** lo define el plan maestro; aquí estas fases tienen los números **6, 7, 12 y 14**
+> (no consecutivos a propósito: el bloque de producto —perfil/progresión, fases 8–10— se intercala
+> antes). Cada fase es **pequeña y autónoma** (se mergea sola, con CI en verde y ficha en
+> [`../features/`](../features/)).
 
 ## Contexto
 
 El backend ya usa **Auth + Firestore + Cloud Functions + Hosting**. Estas fases añaden la capa de
 *observabilidad* (saber qué pasa y por qué falla), *endurecimiento* (proteger el backend del abuso) y
-*crecimiento* (configurar y experimentar sin re-publicar). No introducen features de juego nuevas;
+*configuración/experimentos* (cambiar parámetros sin re-publicar). No introducen features de juego;
 hacen que lo existente sea medible, robusto y operable en producción.
 
 ## Decisión transversal #1 — Plataformas (Windows queda fuera)
@@ -48,7 +50,7 @@ en ajustes (por defecto activado donde la ley lo permita; desactivado hasta cons
 
 ---
 
-## Fase 8 — Observabilidad base (Crashlytics + Analytics)
+## Fase 6 — Observabilidad base (Crashlytics + Analytics)
 
 **Objetivo:** ver crashes reales y entender cómo se usa la app. Es la fase fundacional: las demás se
 apoyan en Analytics.
@@ -72,11 +74,11 @@ apoyan en Analytics.
 **Plataformas:** Android, iOS (Crashlytics + Analytics) · Web (solo Analytics) · Windows: no-op.
 **Cierre:** eventos visibles en DebugView, un crash de prueba aparece en la consola, ficha
 `docs/features/observabilidad.md`, toggle de privacidad en ajustes.
-**Dependencias:** ninguna (puede ir tras la Fase 5).
+**Dependencias:** ninguna (es la primera fase del bloque).
 
 ---
 
-## Fase 9 — Endurecimiento del backend (App Check)
+## Fase 7 — Endurecimiento del backend (App Check)
 
 **Objetivo:** garantizar que solo la app legítima llama a Firestore, Functions y Storage. Relevante
 porque hay **dinero virtual** y Functions sensibles.
@@ -91,18 +93,20 @@ porque hay **dinero virtual** y Functions sensibles.
 **Plataformas:** Android, iOS, Web · Windows: sin App Check (decisión de alcance).
 **Cierre:** App Check en monitor sin falsos positivos durante X días, luego enforcement; ficha
 `docs/features/app-check.md`.
-**Dependencias:** conviene tener Analytics (Fase 8) para medir el impacto del enforcement.
+**Dependencias:** conviene tener Analytics (Fase 6) para medir el impacto del enforcement.
 
 ---
 
-## Fase 10 — Configuración remota y experimentos (Remote Config + A/B Testing)
+## Fase 12 — Configuración remota y experimentos (Remote Config + A/B Testing)
 
-**Objetivo:** ajustar parámetros y probar variantes **sin publicar una versión nueva**.
+**Objetivo:** ajustar parámetros y probar variantes **sin publicar una versión nueva**. Va más tarde
+porque A/B Testing **necesita tráfico de usuarios** para ser útil (de ahí que vaya tras el bucle de
+retención y la monetización).
 
 ### Remote Config
 - Parámetros del juego con valores por defecto locales y override remoto: `apuesta_min`, `apuesta_max`,
   `timer_seg`, `bono_conversion`, `num_barajas`.
-- **Feature flags** para activar/desactivar features en caliente (p. ej. comunicación de voz, salas).
+- **Feature flags** para activar/desactivar features en caliente (p. ej. comunicación de voz).
 - Carga segura: valores por defecto empaquetados → la app nunca depende de la red para arrancar.
 
 ### A/B Testing (sobre Remote Config + Analytics)
@@ -112,13 +116,15 @@ porque hay **dinero virtual** y Functions sensibles.
 **Plataformas:** Android, iOS, Web · Windows: usa solo los valores por defecto locales.
 **Cierre:** un parámetro real (p. ej. `timer_seg`) controlado desde la consola; un experimento A/B
 configurado; ficha `docs/features/remote-config.md`.
-**Dependencias:** Analytics (Fase 8) es requisito de A/B Testing.
+**Dependencias:** Analytics (Fase 6) es requisito de A/B Testing; conviene tener ya features que ajustar
+(timer, bono, misiones de la Fase 10).
 
 ---
 
-## Fase 11 — Distribución y calidad de builds (App Distribution + Test Lab)
+## Fase 14 — Distribución y calidad de builds (App Distribution + Test Lab)
 
-**Objetivo:** repartir betas a testers y validar en dispositivos reales.
+**Objetivo:** repartir betas a testers y validar en dispositivos reales. Va al final como
+*endurecimiento del proceso* (no bloquea features).
 
 ### App Distribution
 - Subida automática del APK/AAB firmado (y del iOS cuando haya firma) a grupos de testers desde el CI,
@@ -143,16 +149,17 @@ configurado; ficha `docs/features/remote-config.md`.
 - **Cloud Storage**: solo si se quieren avatares con foto (hoy son emojis).
 - **Vertex AI in Firebase / Genkit**: "coach" de estrategia o moderación de chat con IA (exploratorio).
 
-> **Cloud Messaging (push)** ya está contemplado en la **Fase 7** del plan maestro; no se duplica aquí.
+> **Cloud Messaging (push)** está contemplado en la **Fase 11** (monetización y pulido) del plan maestro;
+> no se duplica aquí.
 
-## Resumen de fases
+## Resumen de fases de este bloque
 
 | Fase | Contenido | Plataformas | Depende de |
 |------|-----------|-------------|------------|
-| 8 | Observabilidad base: Crashlytics + Analytics (full) | And/iOS (+Web Analytics) | — |
-| 9 | App Check (endurecimiento del backend) | And/iOS/Web | Fase 8 (recomendado) |
-| 10 | Remote Config + A/B Testing | And/iOS/Web | Fase 8 (A/B) |
-| 11 | App Distribution + Test Lab | And/iOS | firma release (lista); `integration_test` |
+| 6 | Observabilidad base: Crashlytics + Analytics (full) | And/iOS (+Web Analytics) | — |
+| 7 | App Check (endurecimiento del backend) | And/iOS/Web | Fase 6 (recomendado) |
+| 12 | Remote Config + A/B Testing | And/iOS/Web | Fase 6 (A/B); features que ajustar |
+| 14 | App Distribution + Test Lab | And/iOS | firma release (lista); `integration_test` |
 
 ## Costos (plan Blaze, ya activo)
 

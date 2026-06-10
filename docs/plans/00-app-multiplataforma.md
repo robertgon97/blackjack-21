@@ -76,25 +76,39 @@ opcional para ver reacciones).
 | 3.5 | Conversión de cuenta anónima → permanente (account linking + bono) | ✅ |
 | 4 | Social: amigos y transferencias | ✅ |
 | 5 | Salas multijugador en tiempo real | ✅ |
-| 6 | Comunicación en sala (chat + voz + cámara) | ⬜ |
-| 7 | Monetización y pulido (anuncios, leaderboard, PWA, push) | ⬜ |
-| 8 | Observabilidad base: Crashlytics + Analytics (full) | ⬜ |
-| 9 | Endurecimiento del backend: App Check | ⬜ |
-| 10 | Configuración remota y experimentos: Remote Config + A/B Testing | ⬜ |
-| 11 | Distribución y calidad de builds: App Distribution + Test Lab | ⬜ |
-| 12 | Perfil + estadísticas de juego (server-side) | ⬜ |
-| 13 | Progresión: niveles/XP + logros (migra `stats.js`) | ⬜ |
-| 14 | Leaderboards semanales + top de amigos + bono diario + misiones | ⬜ |
+| 6 | Observabilidad base: Crashlytics + Analytics (full) | ⬜ |
+| 7 | Endurecimiento del backend: App Check | ⬜ |
+| 8 | Perfil + estadísticas de juego (server-side) | ⬜ |
+| 9 | Progresión: niveles/XP + logros (migra `stats.js`) | ⬜ |
+| 10 | Leaderboards semanales + top de amigos + bono diario + misiones | ⬜ |
+| 11 | Monetización y pulido (anuncios, PWA, push) | ⬜ |
+| 12 | Configuración remota y experimentos: Remote Config + A/B Testing | ⬜ |
+| 13 | Comunicación en sala (chat + voz + cámara) | ⬜ |
+| 14 | Distribución y calidad de builds: App Distribution + Test Lab | ⬜ |
 
 > Leyenda: ⬜ pendiente · 🚧 en curso · ✅ hecho. Actualizar al avanzar.
->
-> Las fases **8–11** (sacar provecho del resto de Firebase) están detalladas en
-> [`01-firebase-observabilidad-y-crecimiento.md`](01-firebase-observabilidad-y-crecimiento.md).
-> Las fases **12–14** (perfil, progresión y leaderboards — el "sabor" de app de juego) están en
-> [`02-perfil-progresion-y-leaderboards.md`](02-perfil-progresion-y-leaderboards.md).
-> Todas son fases pequeñas y autónomas. **Nota de orden:** los números son orientativos; el bloque de
-> **producto (12–14)** puede priorizarse antes que la infraestructura (9–11), y el perfil tiene
-> sinergia con Analytics (Fase 8). **Windows queda fuera** de los servicios Firebase de las fases 8–11.
+
+### Criterio del orden (6 → 14)
+
+Reordenadas por **valor/esfuerzo y dependencias**, no por el tema en que se diseñaron:
+
+1. **Fundación (6–7):** primero *medir y capturar errores* (Observabilidad) y *proteger el dinero
+   virtual* ya en producción (App Check). Barato y habilita todo lo demás.
+2. **Bucle de retención (8–10):** Perfil → Progresión → Leaderboards. Es el "sabor" de app de juego y
+   el hueco detectado; comparte instrumentación con Analytics (Fase 6).
+3. **Crecimiento (11–12):** Monetización + push (ya hay logros/leaderboards que notificar y base de
+   usuarios) y luego Remote Config + A/B (A/B necesita tráfico para valer).
+4. **Features caras y proceso (13–14):** Comunicación voz/cámara (LiveKit, lo más complejo) y, al
+   final, Distribución + Test Lab (endurecer el proceso de builds).
+
+Detalle: [`01-firebase-observabilidad-y-crecimiento.md`](01-firebase-observabilidad-y-crecimiento.md)
+(fases 6, 7, 12, 14) y
+[`02-perfil-progresion-y-leaderboards.md`](02-perfil-progresion-y-leaderboards.md) (fases 8–10).
+**Windows queda fuera** de los servicios Firebase (fases 6, 7, 12).
+
+> **Nota:** la posición más debatible es **Comunicación (13)**: si se quiere que el multijugador recién
+> hecho "brille" antes, su **chat de texto** (barato) puede adelantarse separándolo de la voz/cámara
+> (lo caro). Se decide al llegar.
 
 **Cierre de cada fase:** `dart format` + `flutter analyze` + `flutter test` en verde, ficha en
 `docs/features/` y reglas en `docs/reglas-negocio/` creadas/actualizadas, README + CLAUDE.md al día, y

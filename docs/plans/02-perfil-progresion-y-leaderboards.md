@@ -1,10 +1,11 @@
 # Plan: Perfil, progresión y leaderboards
 
-> Documento vivo. Continúa el [plan maestro](00-app-multiplataforma.md). Cubre un hueco detectado:
-> **no existe una feature de perfil**. Hoy solo hay un `PerfilUsuario` básico (nombre, avatar, saldo,
-> código de invitación) y una `HistorialPage` de movimientos suelta en `wallet/`; no hay estadísticas
-> de juego, ni niveles, ni logros, ni rankings. Estas fases lo completan con el "sabor" de una app de
-> juego (progresión + competencia + enganche), en fases **pequeñas y autónomas**.
+> Documento vivo. Detalla el bloque de **producto** dentro del [plan maestro](00-app-multiplataforma.md):
+> fases **8, 9 y 10** (consecutivas). Cubre un hueco detectado: **no existe una feature de perfil**.
+> Hoy solo hay un `PerfilUsuario` básico (nombre, avatar, saldo, código de invitación) y una
+> `HistorialPage` de movimientos suelta en `wallet/`; no hay estadísticas de juego, ni niveles, ni
+> logros, ni rankings. Estas fases lo completan con el "sabor" de una app de juego (progresión +
+> competencia + enganche), en fases **pequeñas y autónomas**.
 
 ## Estado actual (qué hay y qué falta)
 
@@ -15,7 +16,7 @@
 | Feature `profile/` (pantalla de perfil dedicada) | ❌ no existe |
 | Estadísticas de juego (manos, victorias, rachas…) | ❌ no existe |
 | Niveles / XP / logros (el `stats.js` legacy nunca se migró) | ❌ no existe |
-| Leaderboards / tops | ❌ no existe (solo se menciona "leaderboard" en Fase 7) |
+| Leaderboards / tops | ❌ no existe (solo se menciona "leaderboard" de pasada) |
 
 ## Decisión transversal — Anti-trampa (server-side)
 
@@ -40,7 +41,7 @@ progresión oficial**; el modo solo puede mostrar stats locales etiquetadas como
 
 ---
 
-## Fase 12 — Perfil y estadísticas
+## Fase 8 — Perfil y estadísticas
 
 **Objetivo:** una pantalla de perfil de verdad, con las estadísticas de juego del usuario.
 
@@ -53,15 +54,15 @@ progresión oficial**; el modo solo puede mostrar stats locales etiquetadas como
   ganancia, racha actual/mejor, total apostado/ganado).
 - Ruta `/perfil` y entrada desde la barra de estado.
 
-**No incluye:** niveles/logros (Fase 13) ni rankings (Fase 14).
+**No incluye:** niveles/logros (Fase 9) ni rankings (Fase 10).
 **Plataformas:** todas (es Firestore + UI).
 **Cierre:** stats reales tras jugar manos multijugador; pantalla de perfil navegable; ficha
-`docs/features/perfil.md`. Sinergia: estos mismos eventos los registra Analytics (Fase 8).
-**Dependencias:** ninguna dura; idealmente tras la Fase 5 (ya hecha).
+`docs/features/perfil.md`. Sinergia: estos mismos eventos los registra Analytics (Fase 6).
+**Dependencias:** ninguna dura; idealmente tras la Fase 6 (para reusar la instrumentación de eventos).
 
 ---
 
-## Fase 13 — Progresión (niveles + logros)
+## Fase 9 — Progresión (niveles + logros)
 
 **Objetivo:** dar sensación de avance con el `stats.js` legacy migrado.
 
@@ -72,16 +73,16 @@ progresión oficial**; el modo solo puede mostrar stats locales etiquetadas como
   progreso en el perfil.
 - **Logros/insignias** desbloqueables: primer blackjack, 100 manos, racha de 5, "millonario", etc.
   Se evalúan server-side al resolver y se guardan; la UI muestra una galería de logros (con bloqueados
-  en gris). Al desbloquear, un aviso/toast (y push si la Fase 7 ya está).
+  en gris). Al desbloquear, un aviso/toast (y push si la Fase 11 ya está).
 
 **Plataformas:** todas.
 **Cierre:** subir de nivel y desbloquear un logro reales; tests de la lógica de niveles/logros; ficha
 `docs/features/progresion.md`.
-**Dependencias:** Fase 12 (stats persistidas).
+**Dependencias:** Fase 8 (stats persistidas).
 
 ---
 
-## Fase 14 — Leaderboards y enganche
+## Fase 10 — Leaderboards y enganche
 
 **Objetivo:** competencia y retención (lo "chévere").
 
@@ -94,26 +95,26 @@ progresión oficial**; el modo solo puede mostrar stats locales etiquetadas como
 - **Enganche tipo juego:**
   - **Bono por login diario** (racha diaria) — Function idempotente por día, como el bono de conversión.
   - **Misiones diarias/semanales** ("gana 3 manos hoy", "haz un blackjack") con recompensa.
-  - Con push (Fase 7): "subiste de nivel", "tu racha diaria expira pronto", "bajaste del top 10".
+  - Con push (Fase 11): "subiste de nivel", "tu racha diaria expira pronto", "bajaste del top 10".
 
 **Plataformas:** todas (la programación semanal vive en Functions, no en el cliente).
 **Cierre:** un leaderboard semanal poblado y consultable, top de amigos, y el bono diario funcionando;
 ficha `docs/features/leaderboards.md`.
-**Dependencias:** Fase 12 (stats). El bono diario reutiliza el patrón de `claimConversionBonus`.
+**Dependencias:** Fase 8 (stats). El bono diario reutiliza el patrón de `claimConversionBonus`.
 
 ---
 
-## Resumen de fases
+## Resumen de fases de este bloque
 
 | Fase | Contenido | Anti-trampa | Depende de |
 |------|-----------|-------------|------------|
-| 12 | Perfil + estadísticas de juego (server-side) | Functions escriben stats | — |
-| 13 | Progresión: niveles/XP + logros (migra `stats.js`) | Functions otorgan XP/logros | Fase 12 |
-| 14 | Leaderboards semanales + top amigos + bono diario + misiones | agregación y reset en Functions | Fase 12 |
+| 8 | Perfil + estadísticas de juego (server-side) | Functions escriben stats | — (idealmente tras Fase 6) |
+| 9 | Progresión: niveles/XP + logros (migra `stats.js`) | Functions otorgan XP/logros | Fase 8 |
+| 10 | Leaderboards semanales + top amigos + bono diario + misiones | agregación y reset en Functions | Fase 8 |
 
-## Nota sobre prioridad y orden
+## Nota sobre el orden
 
-Los números son orientativos: estas fases de **producto** (perfil/progresión) pueden priorizarse
-**antes** que las de infraestructura (App Distribution/Test Lab) según convenga. El perfil tiene
-**sinergia con Analytics (Fase 8)**: los mismos eventos de juego que alimentan las stats se registran
-como eventos de Analytics, así que conviene planificar ambas cerca.
+Este bloque de **producto (8–10)** va **antes** que la infraestructura de configuración/distribución
+(fases 12 y 14) porque construye el bucle de retención del juego. Tiene **sinergia con Analytics
+(Fase 6)**: los mismos eventos de juego que alimentan las stats se registran como eventos de Analytics,
+así que ambas conviven bien.
