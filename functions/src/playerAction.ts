@@ -193,6 +193,15 @@ export const playerAction = onCall(
 
       const mano = { ...manos[idx], cartas: [...manos[idx].cartas] };
 
+      // Saldo disponible para nuevos compromisos = balance en Firestore menos
+      // las apuestas YA comprometidas en esta ronda (que aún no se han deducido;
+      // la deducción ocurre al resolver). Doblar y dividir comprometen una
+      // apuesta adicional igual a la de la mano, así que deben validarse aquí
+      // server-side; el cliente solo bloquea como UX, no como autoridad.
+      const balanceActual = (userDataMap[uid]?.['balance'] as number) ?? 0;
+      const comprometido = manos.reduce((acc, m) => acc + m.apuesta, 0);
+      const saldoDisponible = balanceActual - comprometido;
+
       switch (accion) {
         case 'pedir': {
           if (nextIdx >= shoe.length) throw new HttpsError('failed-precondition', 'Shoe agotado.');
@@ -213,6 +222,9 @@ export const playerAction = onCall(
         case 'doblar': {
           if (mano.cartas.length !== 2 || mano.doblada) {
             throw new HttpsError('failed-precondition', 'No puedes doblar ahora.');
+          }
+          if (saldoDisponible < mano.apuesta) {
+            throw new HttpsError('failed-precondition', 'Saldo insuficiente para doblar.');
           }
           if (nextIdx >= shoe.length) throw new HttpsError('failed-precondition', 'Shoe agotado.');
           mano.cartas = [...mano.cartas, shoe[nextIdx++]];
@@ -239,6 +251,9 @@ export const playerAction = onCall(
             manos.length >= 4
           ) {
             throw new HttpsError('failed-precondition', 'No puedes dividir ahora.');
+          }
+          if (saldoDisponible < mano.apuesta) {
+            throw new HttpsError('failed-precondition', 'Saldo insuficiente para dividir.');
           }
           // La división reparte una carta adicional a CADA mano resultante,
           // por lo que se necesitan dos cartas disponibles en el shoe.

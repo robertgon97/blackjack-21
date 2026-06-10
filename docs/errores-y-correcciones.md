@@ -89,3 +89,35 @@ apuestas) debe validarse contra el estado autoritativo antes de escribir. Las op
 leer-modificar-escribir sobre documentos compartidos van siempre en transacción. Y un solo contador
 debe tener una sola fuente de verdad. Correr `dart format` + `flutter analyze --fatal-infos` +
 `flutter test` localmente antes de abrir el PR habría evitado el CI rojo.
+
+---
+
+## 2026-06-10 — Segunda ronda de review de Fase 5 (PR #12)
+
+**Qué falló:** una segunda revisión sobre los commits de corrección detectó hallazgos que la primera
+no cubrió:
+
+1. **Crítico — doblar/dividir «a crédito»** (`functions/src/playerAction.ts`): la validación de saldo
+   solo existía en `startRound` (apuesta inicial). Durante la ronda, `users/{uid}.balance` todavía
+   refleja el saldo previo (las apuestas se deducen al resolver), así que un jugador podía enviar
+   `doblar`/`dividir` comprometiendo más de lo que tenía. El cliente (`_BotonesAccion`) usaba el mismo
+   balance pre-ronda sin descontar las apuestas ya en juego, sobrestimando el saldo.
+2. **`cambiarEstadoSala`** (`firestore_sala_repository.dart`): `get()` + `update()` sin transacción al
+   limpiar `ready`/`apuesta` de todos los jugadores.
+3. **`/join/:code`** (`app_router.dart`): el `redirect` ejecutaba `buscarPorCodigo` (query Firestore)
+   sin verificar sesión; sin auth las reglas lanzarían una excepción no capturada.
+4. Menores: `_ZonaOtroJugador` mostraba `manos.first` en vez de la mano activa (`indiceMano`);
+   `room_page.dart` mutaba `_ultimaFase` dentro de `build()`; faltaban tests de dominio para `rooms`.
+
+**Corrección:** en `playerAction` se calcula `saldoDisponible = balance − Σ apuestas comprometidas`
+y se valida antes de `doblar`/`dividir`; el cliente replica ese cálculo en `_MiZona`
+(`saldoDisponible`) y lo pasa a los botones. `cambiarEstadoSala` envuelto en `runTransaction`. El
+`redirect` de `/join` verifica sesión antes del `await` y captura errores cayendo a `/lobby`.
+`_ZonaOtroJugador` indexa por `indiceMano` (con `clamp`). El arranque del temporizador se mueve a
+`ref.listen(salaProvider, …)` y se elimina `_ultimaFase`. Se añade `test/rooms_modelos_test.dart`
+(10 tests de `jugadoresActivos`, `todosListos`, `asientosLibres`/`estaLlena` y `fromDoc`).
+
+**Aprendizaje:** validar el saldo en la apuesta inicial no basta: cada acción que compromete fichas
+adicionales (doblar, dividir) debe revalidar contra el saldo disponible descontando lo ya
+comprometido en la ronda. Los efectos secundarios en Flutter (arrancar timers, etc.) van en
+`ref.listen`/`didUpdateWidget`, nunca como asignación dentro de `build()`.

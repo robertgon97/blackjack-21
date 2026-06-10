@@ -96,7 +96,10 @@ class _ZonaOtroJugador extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final manoActiva = datos.manos.isNotEmpty ? datos.manos.first : null;
+    // Mostrar la mano que el otro jugador tiene activa (tras dividir, no la 1).
+    final manoActiva = datos.manos.isEmpty
+        ? null
+        : datos.manos[datos.indiceMano.clamp(0, datos.manos.length - 1)];
     final puntos = manoActiva != null ? calcularPuntos(manoActiva.cartas) : 0;
 
     return Container(
@@ -223,6 +226,13 @@ class _MiZona extends StatelessWidget {
         : null;
     final puntos = manoActiva != null ? calcularPuntos(manoActiva.cartas) : 0;
 
+    // Saldo disponible = balance pre-ronda menos las apuestas ya comprometidas
+    // en las manos en juego (el servidor descuenta igual al resolver). Sin esto,
+    // los botones DOBLAR/DIVIDIR sobrestimarían el saldo. La autoridad real
+    // es la Cloud Function; esto es solo UX.
+    final comprometido = datos.manos.fold<int>(0, (acc, m) => acc + m.apuesta);
+    final saldoDisponible = balance - comprometido;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -264,7 +274,7 @@ class _MiZona extends StatelessWidget {
             _BotonesAccion(
               mano: manoActiva,
               cantidadManos: datos.manos.length,
-              balance: balance,
+              balance: saldoDisponible,
               config: config,
               onAccion: onAccion,
             ),

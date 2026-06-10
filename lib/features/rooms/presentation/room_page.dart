@@ -25,7 +25,6 @@ class _RoomPageState extends ConsumerState<RoomPage> {
   int _timerSeg = 45;
   Timer? _timer;
   String? _errorAccion;
-  EstadoSala? _ultimaFase;
 
   @override
   void dispose() {
@@ -73,6 +72,16 @@ class _RoomPageState extends ConsumerState<RoomPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Arrancar el temporizador en la transición a 'playing'. Se gestiona como
+    // efecto secundario con ref.listen (no mutando estado dentro de build).
+    ref.listen(salaProvider(widget.roomId), (prev, next) {
+      final antes = prev?.valueOrNull?.status;
+      final ahora = next.valueOrNull?.status;
+      if (ahora == EstadoSala.playing && antes != EstadoSala.playing) {
+        _iniciarTimer(next.valueOrNull!.config.timerSeg);
+      }
+    });
+
     final salaAsync = ref.watch(salaProvider(widget.roomId));
     final tapete = context.tapete;
     final uid = ref.watch(perfilStreamProvider).valueOrNull?.uid ?? '';
@@ -92,15 +101,6 @@ class _RoomPageState extends ConsumerState<RoomPage> {
             body: const Center(child: Text('La sala ya no existe.')),
           );
         }
-
-        // Iniciar timer al pasar a 'playing'.
-        if (sala.status == EstadoSala.playing &&
-            _ultimaFase != EstadoSala.playing) {
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _iniciarTimer(sala.config.timerSeg),
-          );
-        }
-        _ultimaFase = sala.status;
 
         return Scaffold(
           body: Container(

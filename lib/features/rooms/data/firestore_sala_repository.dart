@@ -181,19 +181,23 @@ class FirestoreSalaRepository implements ISalaRepository {
     required String roomId,
     required EstadoSala nuevoEstado,
   }) async {
-    final data = <String, dynamic>{'status': nuevoEstado.name};
-    // Al volver a apostar, limpiamos las apuestas y el ready de todos.
-    if (nuevoEstado == EstadoSala.betting) {
-      final doc = await _db.collection('rooms').doc(roomId).get();
-      if (doc.exists) {
+    final ref = _db.collection('rooms').doc(roomId);
+    // Al volver a apostar hay que listar los jugadores y limpiar su ready/apuesta.
+    // Esa lectura + escritura va en una transacción: si alguien se une entre el
+    // get y el update, no se perdería la limpieza de su entrada.
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (!doc.exists) return;
+      final data = <String, dynamic>{'status': nuevoEstado.name};
+      if (nuevoEstado == EstadoSala.betting) {
         final sala = Sala.fromDoc(doc.id, doc.data()!);
         for (final uid in sala.players.keys) {
           data['players.$uid.ready'] = false;
           data['players.$uid.apuesta'] = FieldValue.delete();
         }
       }
-    }
-    await _db.collection('rooms').doc(roomId).update(data);
+      tx.update(ref, data);
+    });
   }
 
   // ── Acciones de partida (Cloud Functions) ─────────────────────────────────

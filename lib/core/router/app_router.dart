@@ -40,11 +40,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/join/:code',
         redirect: (context, state) async {
+          // Sin sesión, la query a Firestore la denegarían las reglas (excepción
+          // no capturada que rompe el router). Verificar auth antes del await.
+          if (ref.read(perfilStreamProvider).valueOrNull == null) {
+            return '/login';
+          }
           final code = state.pathParameters['code'] ?? '';
           final repo = ref.read(salaRepositoryProvider);
-          final sala = await repo.buscarPorCodigo(code);
-          if (sala == null) return '/lobby';
-          return '/room/${sala.id}';
+          try {
+            final sala = await repo.buscarPorCodigo(code);
+            if (sala == null) return '/lobby';
+            return '/room/${sala.id}';
+          } catch (_) {
+            return '/lobby';
+          }
         },
       ),
       GoRoute(
