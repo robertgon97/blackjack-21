@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.robertgon97" "\0"
-            VALUE "FileDescription", "blackjack_21" "\0"
+            VALUE "FileDescription", "Blackjack 21" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "blackjack_21" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.robertgon97. All rights reserved." "\0"
             VALUE "OriginalFilename", "blackjack_21.exe" "\0"
-            VALUE "ProductName", "blackjack_21" "\0"
+            VALUE "ProductName", "Blackjack 21" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
