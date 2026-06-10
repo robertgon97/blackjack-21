@@ -20,7 +20,10 @@ class BlackjackApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     // Sincroniza uid y tipo_cuenta en Crashlytics/Analytics al cambiar el perfil.
+    // Se ignoran los estados AsyncLoading/AsyncError para no limpiar el uid
+    // durante reconexiones o refrescos del stream.
     ref.listen(perfilStreamProvider, (_, next) {
+      if (next is! AsyncData) return;
       final t = ref.read(servicioTelemetriaProvider);
       final perfil = next.valueOrNull;
       t.setUid(perfil?.uid);
