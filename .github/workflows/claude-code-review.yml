@@ -46,4 +46,5 @@ jobs:
             Publica solo comentarios en GitHub; no devuelvas el texto de la revisión como mensaje.
 
           claude_args: |
+            --model claude-sonnet-4-6
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
