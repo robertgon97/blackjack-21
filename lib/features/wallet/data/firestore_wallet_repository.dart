@@ -1,14 +1,41 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../domain/i_wallet_repository.dart';
 import '../domain/transaccion.dart';
 
-/// Implementación de [IWalletRepository] leyendo Firestore.
+/// Implementación de [IWalletRepository] leyendo Firestore. El bono diario, que
+/// escribe el saldo, se delega a una Cloud Function (el cliente no puede tocar
+/// `balance`).
 class FirestoreWalletRepository implements IWalletRepository {
-  FirestoreWalletRepository({FirebaseFirestore? db})
-      : _db = db ?? FirebaseFirestore.instance;
+  FirestoreWalletRepository({
+    FirebaseFirestore? db,
+    FirebaseFunctions? functions,
+  })  : _db = db ?? FirebaseFirestore.instance,
+        _functions = functions ??
+            FirebaseFunctions.instanceFor(region: 'southamerica-east1');
 
   final FirebaseFirestore _db;
+  final FirebaseFunctions _functions;
+
+  @override
+  Future<int> reclamarBonoDiario() async {
+    try {
+      final res =
+          await _functions.httpsCallable('claimDailyBonus').call<Object?>();
+      final data = res.data as Map<Object?, Object?>;
+      return (data['balance'] as num).toInt();
+    } on FirebaseFunctionsException catch (e) {
+      final mensaje = switch (e.code) {
+        'failed-precondition' =>
+          e.message ?? 'Aún no puedes reclamar el bono diario.',
+        'unauthenticated' => 'Inicia sesión para reclamar el bono.',
+        'not-found' => 'No se encontró tu perfil.',
+        _ => 'No se pudo reclamar el bono. Intenta de nuevo.',
+      };
+      throw Exception(mensaje);
+    }
+  }
 
   @override
   Stream<int> saldoStream(String uid) {
@@ -59,6 +86,7 @@ class FirestoreWalletRepository implements IWalletRepository {
       'bonus_registro' => TipoTransaccion.bonusRegistro,
       'bonus_invitacion' => TipoTransaccion.bonusInvitacion,
       'bonus_conversion' => TipoTransaccion.bonusConversion,
+      'bonus_daily' => TipoTransaccion.bonusDaily,
       _ => TipoTransaccion.win,
     };
   }

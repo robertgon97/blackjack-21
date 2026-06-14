@@ -33,8 +33,9 @@ y la subcolección `users/{uid}/transactions` (registro de cada ronda). Ver
 
 > **Persistencia del saldo (issue #30):** hasta esta corrección la banca vivía solo en memoria
 > (arrancaba en 1000 y no se guardaba), así que al reiniciar la app se perdía. Ahora el juego solo lee
-> el balance real y lo actualiza server-side. La **recarga** cuando el saldo llega a $0 (antiguo
-> "préstamo" local) queda **pendiente** de un mecanismo server-side (bono/recarga); el botón solo avisa.
+> el balance real y lo actualiza server-side. La **recarga** cuando el saldo llega a $0 es un **bono
+> diario** de $500 (una vez cada 24 h) acreditado por la Function `claimDailyBonus` (sustituye al
+> antiguo "préstamo" local, que inflaba un saldo que el servidor no reconocía).
 
 ## Estructura del código
 
@@ -81,6 +82,9 @@ Responsabilidades clave:
   comprueba que la apuesta no supera el saldo y que el crupier jugó según las reglas, y actualiza
   `users/{uid}.balance` + registra la transacción. Ver
   [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
+- **`claimDailyBonus`** (`functions/src/dailyBonus.ts`): acredita el **bono diario** de $500 una vez
+  cada 24 h (control de cooldown sobre `users/{uid}.lastDailyBonus`, campo protegido en
+  `firestore.rules`). Es la recarga cuando el saldo llega a $0.
 
 > **Limitación conocida (Opción B):** el reparto sigue siendo client-side, así que el cliente elige las
 > cartas. La Function valida las *reglas* (no puedes ganar con cartas perdedoras ni plantar al crupier
@@ -89,8 +93,8 @@ Responsabilidades clave:
 
 ## Casos borde
 
-- **Sin saldo** (banca ≤ 0 tras una ronda) → el botón de recarga avisa que estará disponible
-  próximamente (la recarga server-side es un follow-up; ya no se "presta" en local).
+- **Sin saldo** (banca ≤ 0 tras una ronda) → botón "Reclamar bono diario ($500)": acredita el bono vía
+  `claimDailyBonus` si no se reclamó en las últimas 24 h; si está en cooldown, avisa cuándo volver.
 - **Fallo de red al guardar** → la ronda se muestra igual; se avisa que el saldo no se guardó y se
   reconcilia con Firestore al reabrir (la banca local no es autoritativa).
 - **Blackjack natural** (21 con 2 cartas, sin split ni doble) → resuelve de inmediato y paga 3:2/6:5.

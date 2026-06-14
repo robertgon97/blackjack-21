@@ -651,14 +651,25 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     );
   }
 
-  /// Recarga de saldo cuando la banca llega a cero.
+  /// Reclama el **bono diario** ($500, una vez cada 24 h) vía Cloud Function.
   ///
-  /// El saldo ahora es real y server-authoritative: no se puede "prestar" en
-  /// local (el servidor rechazaría apostar por encima del balance, y al reabrir
-  /// se perdería). La recarga legítima (bono/préstamo) server-side queda
-  /// pendiente. Ver docs/features/juego-solo.md.
-  void pedirPrestamo() {
+  /// El saldo es server-authoritative (no se puede "prestar" en local), así que
+  /// la recarga la acredita el servidor y devuelve el nuevo balance. Si está en
+  /// cooldown o falla la red, avisa con el mensaje correspondiente.
+  Future<void> pedirPrestamo() async {
     if (state.animando || state.fase != FaseJuego.resultado) return;
-    _avisar('La recarga de saldo estará disponible próximamente.');
+    try {
+      final nuevoBalance =
+          await ref.read(walletRepositoryProvider).reclamarBonoDiario();
+      state = state.copyWith(banca: nuevoBalance);
+      _avisar('¡Bono diario de \$500 reclamado!');
+      nuevaRonda();
+    } catch (e) {
+      _avisar(
+        e is Exception
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'No se pudo reclamar el bono.',
+      );
+    }
   }
 }
