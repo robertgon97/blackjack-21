@@ -25,6 +25,17 @@ El documento de perfil de cada usuario. El `uid` es el de Firebase Auth.
 | `createdAt` | timestamp | Fecha de creación |
 | `lastSeen` | timestamp | Última actividad (presencia) |
 
+### Sub-colección `users/{uid}/progreso/{periodo}` 🔒
+
+Progreso de misiones (Fase 10c). `periodo` es el día UTC (`YYYY-MM-DD`) para las diarias o la semana ISO
+(`YYYY-Www`) para las semanales. Lo escriben `playerAction` (contadores) y `claimMission` (`reclamadas`);
+solo lo lee el dueño.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| `manosJugadas` · `ganadas` · `blackjacks` · `gananciaNeta` | int | Contadores del periodo (acumulados por `playerAction`) |
+| `reclamadas` | array&lt;string&gt; | IDs de misiones ya reclamadas en el periodo (`arrayUnion`) |
+
 ### Sub-colección `users/{uid}/transactions/{txId}` 🔒
 
 Historial de movimientos de créditos. **Solo Functions escriben aquí**; el cliente solo lee los suyos.

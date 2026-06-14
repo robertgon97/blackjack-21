@@ -80,7 +80,7 @@ opcional para ver reacciones).
 | 7 | Endurecimiento del backend: App Check (modo monitor) | ✅ |
 | 8 | Perfil + estadísticas de juego (server-side) | ✅ |
 | 9 | Progresión: niveles/XP + logros (migra `stats.js`) | ✅ |
-| 10 | Leaderboards semanales + top de amigos + bono diario + misiones | 🚧 |
+| 10 | Leaderboards semanales + top de amigos + bono diario + misiones | ✅ |
 | 11 | Monetización y pulido (anuncios, PWA, push) | ⬜ |
 | 12 | Configuración remota y experimentos: Remote Config + A/B Testing | ⬜ |
 | 13 | Comunicación en sala (chat + voz + cámara) | ⬜ |

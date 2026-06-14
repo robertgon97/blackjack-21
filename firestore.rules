@@ -68,6 +68,14 @@ service cloud.firestore {
         allow read: if esDueno(uid);
         allow write: if false;
       }
+
+      // Progreso de misiones (Fase 10c): contadores por periodo (día/semana) y
+      // misiones reclamadas. Solo lo lee el dueño; lo escriben `playerAction` y
+      // `claimMission` (Admin SDK).
+      match /progreso/{periodo} {
+        allow read: if esDueno(uid);
+        allow write: if false;
+      }
     }
 
     // ---------- invite_codes ----------

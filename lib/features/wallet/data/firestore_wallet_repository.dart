@@ -117,6 +117,7 @@ class FirestoreWalletRepository implements IWalletRepository {
       'bonus_invitacion' => TipoTransaccion.bonusInvitacion,
       'bonus_conversion' => TipoTransaccion.bonusConversion,
       'bonus_daily' => TipoTransaccion.bonusDaily,
+      'mission_reward' => TipoTransaccion.misionRecompensa,
       _ => TipoTransaccion.win,
     };
   }
