@@ -670,10 +670,10 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   Future<void> pedirPrestamo() async {
     if (state.animando || state.fase != FaseJuego.resultado) return;
     try {
-      final nuevoBalance =
+      final bono =
           await ref.read(walletRepositoryProvider).reclamarBonoDiario();
-      state = state.copyWith(banca: nuevoBalance);
-      _avisar('¡Bono diario de \$500 reclamado!');
+      state = state.copyWith(banca: bono.balance);
+      _avisar('¡Bono diario reclamado: +\$${bono.monto} (día ${bono.racha})!');
       nuevaRonda();
     } catch (e) {
       _avisar(

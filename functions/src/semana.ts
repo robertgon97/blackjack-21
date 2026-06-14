@@ -5,6 +5,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Día calendario en UTC como `YYYY-MM-DD`. Base de la racha del bono diario
+ * (Fase 10b): consistente entre cliente y servidor por usar UTC.
+ */
+export function idDiaUtc(fecha: Date): string {
+  return fecha.toISOString().slice(0, 10);
+}
+
+/**
  * Devuelve el identificador de semana ISO-8601 de [fecha] como `YYYY-Www`.
  * Semana en lunes; la semana 1 contiene el primer jueves del año; el año es el
  * del jueves de esa semana.

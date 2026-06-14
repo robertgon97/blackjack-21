@@ -83,6 +83,11 @@ class BarraEstado extends ConsumerWidget {
             onPressed: () => context.push('/perfil'),
           ),
           IconButton(
+            tooltip: 'Bono diario',
+            icon: const Icon(Icons.card_giftcard, color: Colors.white),
+            onPressed: () => context.push('/bono'),
+          ),
+          IconButton(
             tooltip: 'Ranking',
             icon: const Icon(Icons.leaderboard, color: Colors.white),
             onPressed: () => context.push('/leaderboard'),

@@ -5,6 +5,12 @@
 //  (`leaderboards/{periodo}`). Espejo de `functions/src/semana.ts`.
 // ============================================================
 
+/// Día calendario en UTC como `YYYY-MM-DD`. Base de la racha del bono diario
+/// (Fase 10b); espejo de `idDiaUtc` en `functions/src/semana.ts`. Usa UTC para
+/// que cliente y servidor coincidan en el cambio de día.
+String idDiaUtc(DateTime fecha) =>
+    fecha.toUtc().toIso8601String().substring(0, 10);
+
 /// Devuelve el identificador de semana ISO-8601 de [fecha] como `YYYY-Www`
 /// (p. ej. `2026-W24`).
 ///

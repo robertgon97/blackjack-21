@@ -1,17 +1,25 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { idDiaUtc } from './semana';
 
-const MONTO_BONO = 500;
-const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 horas
+const MONTO_BASE = 500; // recompensa del día 1 de la racha
+const INCREMENTO = 100; // crece por día consecutivo…
+const TOPE_RACHA = 7; // …hasta este día (día 7 = 1100)
+
+/** Recompensa del día [racha] de la racha (creciente, con tope). */
+function montoPorRacha(racha: number): number {
+  const dia = Math.max(1, Math.min(racha, TOPE_RACHA));
+  return MONTO_BASE + (dia - 1) * INCREMENTO;
+}
 
 /**
- * Acredita el **bono diario** de créditos (una vez cada 24 h). Sirve también de
- * recarga cuando el saldo del juego solo llega a $0.
+ * Acredita el **bono diario** con **racha** de días consecutivos (Fase 10b).
+ * Una vez por día calendario (UTC). Sirve también de recarga cuando el saldo del
+ * juego solo llega a $0.
  *
- * El cliente NO puede escribir `balance` ni `lastDailyBonus` (protegidos en
- * firestore.rules), así que el control anti-abuso vive aquí: la ventana de 24 h
- * se valida DENTRO de la transacción sobre el snapshot transaccional, evitando
- * carreras entre llamadas concurrentes.
+ * El cliente NO puede escribir `balance`, `dailyStreak` ni `lastDailyBonusDay`
+ * (protegidos en firestore.rules). El control anti-abuso vive aquí: el día se
+ * compara DENTRO de la transacción sobre el snapshot transaccional.
  */
 export const claimDailyBonus = onCall(
   { region: 'southamerica-east1' },
@@ -24,41 +32,57 @@ export const claimDailyBonus = onCall(
     const userRef = db.collection('users').doc(uid);
 
     const resultado = await db.runTransaction(async (tx) => {
+      // Dentro de la transacción para que el día refleje el instante real del
+      // intento (importante si la transacción se reintenta cerca de medianoche).
+      const ahora = new Date();
+      const hoy = idDiaUtc(ahora);
+      const ayer = idDiaUtc(new Date(ahora.getTime() - 24 * 60 * 60 * 1000));
+
       const snap = await tx.get(userRef);
       if (!snap.exists) {
         throw new HttpsError('not-found', 'Perfil de usuario no encontrado.');
       }
       const data = snap.data()!;
 
-      const last = data.lastDailyBonus as Timestamp | undefined;
-      const ahora = Date.now();
-      if (last && ahora - last.toMillis() < COOLDOWN_MS) {
-        const restanteMs = COOLDOWN_MS - (ahora - last.toMillis());
-        const horas = Math.ceil(restanteMs / (60 * 60 * 1000));
+      // Día del último reclamo. Compat con cuentas previas a la Fase 10b que solo
+      // tienen el timestamp `lastDailyBonus` (sin `lastDailyBonusDay`).
+      const lastDay = data.lastDailyBonusDay as string | undefined;
+      const lastTs = data.lastDailyBonus as Timestamp | undefined;
+      const ultimoDia = lastDay ?? (lastTs ? idDiaUtc(lastTs.toDate()) : undefined);
+
+      if (ultimoDia === hoy) {
         throw new HttpsError(
           'failed-precondition',
-          `Ya reclamaste tu bono diario. Vuelve en ${horas} h.`,
+          'Ya reclamaste tu bono diario hoy. Vuelve mañana.',
         );
       }
 
+      // La racha continúa si el último reclamo fue ayer; si no, vuelve a 1.
+      const rachaPrev =
+        typeof data.dailyStreak === 'number' ? data.dailyStreak : 0;
+      const racha = ultimoDia === ayer ? rachaPrev + 1 : 1;
+      const monto = montoPorRacha(racha);
+
       const balance = typeof data.balance === 'number' ? data.balance : 0;
-      const balanceAfter = balance + MONTO_BONO;
+      const balanceAfter = balance + monto;
 
       tx.update(userRef, {
         balance: balanceAfter,
+        dailyStreak: racha,
+        lastDailyBonusDay: hoy,
         lastDailyBonus: FieldValue.serverTimestamp(),
       });
       tx.set(userRef.collection('transactions').doc(), {
         type: 'bonus_daily',
-        amount: MONTO_BONO,
+        amount: monto,
         balance_after: balanceAfter,
-        description: 'Bono diario',
+        description: `Bono diario (día ${racha})`,
         createdAt: FieldValue.serverTimestamp(),
       });
 
-      return balanceAfter;
+      return { balance: balanceAfter, amount: monto, streak: racha };
     });
 
-    return { balance: resultado, amount: MONTO_BONO };
+    return resultado;
   },
 );
