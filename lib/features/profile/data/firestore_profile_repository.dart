@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../domain/datos_usuario.dart';
+import '../domain/estadisticas.dart';
 import '../domain/i_profile_repository.dart';
 
 /// Implementación de [IProfileRepository] leyendo `users/{uid}` de Firestore.
@@ -12,9 +14,19 @@ class FirestoreProfileRepository implements IProfileRepository {
   final FirebaseFirestore _db;
 
   @override
-  Stream<Map<String, dynamic>> usuarioDocStream(String uid) {
-    return _db.collection('users').doc(uid).snapshots().map(
-          (doc) => doc.data() ?? const <String, dynamic>{},
-        );
+  Stream<DatosUsuario> datosStream(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map((doc) {
+      final data = doc.data();
+      final stats = data?['stats'] as Map<String, dynamic>?;
+      // `whereType` descarta de forma segura cualquier elemento no-String en vez
+      // de lanzar (lo que sí haría `cast<String>()` en runtime).
+      final logros =
+          (data?['logros'] as List<dynamic>?)?.whereType<String>().toList() ??
+              const <String>[];
+      return DatosUsuario(
+        estadisticas: Estadisticas.fromMap(stats),
+        logros: logros,
+      );
+    });
   }
 }

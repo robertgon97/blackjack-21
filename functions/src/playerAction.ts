@@ -314,7 +314,10 @@ export const playerAction = onCall(
 
         // Logros (Fase 9): se evalúan server-side con las stats ya acumuladas y
         // el saldo resultante; se agregan los nuevos al array existente.
-        const logrosPrevios = (userDataMap[pUid]?.['logros'] as string[]) ?? [];
+        const logrosRaw = userDataMap[pUid]?.['logros'];
+        const logrosPrevios = Array.isArray(logrosRaw)
+          ? (logrosRaw as string[])
+          : [];
         const logrosNuevos = evaluarLogros(stats, newBalance, logrosPrevios);
         const userUpdate: Record<string, unknown> = { balance: newBalance, stats };
         if (logrosNuevos.length > 0) {
