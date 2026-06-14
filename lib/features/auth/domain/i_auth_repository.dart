@@ -3,6 +3,14 @@ import 'perfil_usuario.dart';
 /// Contrato de autenticación. La capa data implementa esta interfaz;
 /// la presentación y el domain solo conocen esta abstracción.
 abstract interface class IAuthRepository {
+  /// Stream del estado de sesión basado **solo** en el token de Auth (sin
+  /// Firestore): emite `true` mientras haya usuario autenticado y `false` si no.
+  ///
+  /// El guard de navegación debe basarse en esto, no en [perfilStream]: el
+  /// perfil/saldo es una lectura de Firestore que puede tardar o fallar al
+  /// arrancar (sin red, reglas, App Check) sin que la sesión deje de ser válida.
+  Stream<bool> get sesionStream;
+
   /// Stream del perfil autenticado; emite `null` cuando no hay sesión.
   Stream<PerfilUsuario?> get perfilStream;
 

@@ -62,16 +62,21 @@ core/router/
 ```
 
 Archivos y responsabilidades clave:
-- `auth/domain/i_auth_repository.dart` — contrato: `perfilStream`, `entrarAnonimo`, `registrar`,
-  `entrarConEmail`, `entrarConGoogle`, `salir`. La UI solo conoce esta abstracción.
+- `auth/domain/i_auth_repository.dart` — contrato: `sesionStream`, `perfilStream`, `entrarAnonimo`,
+  `registrar`, `entrarConEmail`, `entrarConGoogle`, `salir`. La UI solo conoce esta abstracción.
+  `sesionStream` (token de Auth, sin Firestore) es la fuente de verdad de «hay o no sesión»;
+  `perfilStream` aporta los datos del perfil (saldo, código…).
 - `auth/data/firebase_auth_repository.dart` — implementación. Crea/lee `users/{uid}`, genera
   `inviteCode` y asigna el bono inicial si el documento no existe.
 - `wallet/domain/i_wallet_repository.dart` — contrato de solo lectura: `saldoStream`,
   `transaccionesStream`.
 - `wallet/data/firestore_wallet_repository.dart` — mapea los docs de Firestore a `Transaccion`
   (incluye la traducción `snake_case` ↔ enum: `transfer_in` → `transferIn`, etc.).
-- `core/router/app_router.dart` — `redirect`: sin sesión → `/login`; con sesión en `/login` → `/`.
-  Se refresca con un `ChangeNotifier` que escucha `perfilStreamProvider`.
+- `core/router/app_router.dart` — `redirect` basado en `sesionStreamProvider` (estado de Auth, no el
+  perfil de Firestore): en cold start `AsyncLoading` → `/splash` (no `/login`); sin sesión → `/login`;
+  con sesión en `/login`/`/splash` → `/`. Se refresca con un `ChangeNotifier` que escucha
+  `sesionStreamProvider`. Esto evita el rebote a login al reabrir la app (issue #49).
+- `auth/presentation/pantalla_splash.dart` — pantalla mostrada mientras Firebase restaura la sesión.
 
 ## Dependencias externas
 
@@ -97,6 +102,11 @@ Fase 5 (resolución de partidas) y la Fase 4 (transferencias entre usuarios). Ve
   por el `snapshots()` de Firestore (no usar el sincrónico para mostrar saldo).
 - **Tipo de transacción desconocido en Firestore** → `_parseTipo` cae a `win` por defecto (no rompe
   la lista).
+- **Cold start con sesión persistida (issue #49)** → el guard espera a que `sesionStream` resuelva
+  (splash) en vez de tratar `AsyncLoading` como «sin sesión»; entra directo al juego sin pasar por
+  login.
+- **Firestore lento o caído al arrancar** → `perfilStream` devuelve un perfil mínimo (saldo 0) en vez
+  de propagar el error; la sesión sigue válida y el saldo real llega cuando hay red.
 
 ## Cómo probarlo
 
@@ -109,3 +119,5 @@ Fase 5 (resolución de partidas) y la Fase 4 (transferencias entre usuarios). Ve
   3. Registrar un email → verificar que se crea `users/{uid}` con `inviteCode` y `balance = 1000`.
   4. Abrir el historial → debe listar las transacciones (vacío al inicio).
   5. Cerrar sesión → el router redirige a `/login`.
+  6. **Persistencia de sesión (issue #49):** con sesión iniciada, cerrar la app por completo y
+     reabrirla → debe verse el splash un instante y entrar directo al juego, sin pasar por login.
