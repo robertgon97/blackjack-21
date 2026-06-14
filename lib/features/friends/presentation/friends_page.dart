@@ -437,7 +437,7 @@ class _DialogoBuscarAmigoState extends ConsumerState<_DialogoBuscarAmigo> {
             controller: _controller,
             decoration: const InputDecoration(
               labelText: 'Código de invitación',
-              hintText: 'Ej. BJ-AB12',
+              hintText: 'Ej. BJ-AB12 (con o sin guion)',
               border: OutlineInputBorder(),
             ),
             textCapitalization: TextCapitalization.characters,
