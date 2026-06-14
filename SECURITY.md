@@ -52,4 +52,9 @@ Son especialmente relevantes los reportes sobre:
   entre cuentas.
 - **Secretos:** exposición de claves, tokens o credenciales en el código o el historial.
 
-Gracias por la divulgación responsable. 🙏
+> **Nota:** `lib/firebase_options.dart` está commiteado a propósito. Las claves de
+> configuración del cliente Firebase (`apiKey`, `appId`, etc.) son **públicas por diseño**
+> y no constituyen secretos de servidor; la protección real recae en las reglas de
+> Firestore, App Check y las Cloud Functions. No es necesario reportarlo.
+
+Gracias por la divulgación responsable.

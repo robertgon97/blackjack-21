@@ -8,6 +8,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    assignees:
+      - "robertgon97"
     commit-message:
       prefix: "chore(deps)"
     labels:
@@ -19,6 +21,17 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    assignees:
+      - "robertgon97"
+    # Los paquetes de Firebase publican versiones coordinadas el mismo día;
+    # agruparlos evita 5–8 PRs por ciclo.
+    groups:
+      firebase:
+        patterns:
+          - "firebase*"
+          - "cloud_firestore"
+          - "cloud_functions"
+          - "google_sign_in"
     commit-message:
       prefix: "chore(deps)"
     labels:
@@ -30,6 +43,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    assignees:
+      - "robertgon97"
     commit-message:
       prefix: "chore(ci)"
     labels:
