@@ -169,7 +169,11 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 - Riverpod providers para las features que faltan (comms, profile…)
 - `freezed` para los modelos (hoy son inmutables con `copyWith` a mano)
 - Fichas de `docs/features/` para las features restantes (comms, profile…)
-- **Fase 7 (siguiente):** App Check + hardening de seguridad. Hoja de ruta completa en `docs/plans/`.
+- **App Check enforcement:** hoy en **modo monitor**; activar el enforcement en Firestore y Functions
+  desde la consola tras medir tráfico legítimo (ver `docs/features/app-check.md`).
+- **Warning KGP:** persiste hasta que `cloud_firestore` migre a *built-in Kotlin* (aún aplica el viejo
+  KGP sin guard). Cuando lo haga, poner `android.builtInKotlin=true`. Benigno con Flutter 3.44.x.
+- **Fase 8 (siguiente):** perfil/progresión/leaderboards. Hoja de ruta en `docs/plans/`.
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
@@ -204,5 +208,14 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > en `PanelAjustes`, eventos de juego/sala/social. Issues abiertos: #18, #19, #20.
 > Ficha: [`docs/features/observabilidad.md`](docs/features/observabilidad.md).
 >
-> **Siguiente — Fases 7–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
-> (App Check, perfil/progresión/leaderboards, monetización, comunicación…).
+> **Hecho en Fase 7:** App Check (`core/app_check/`, mismo patrón que telemetría) en **modo monitor**:
+> Play Integrity (Android), App Attest (iOS), reCAPTCHA v3 (Web), no-op en Windows; debug provider en
+> desarrollo. Se activa *fire-and-forget* en `main.dart` (no `await`, para no bloquear `runApp`). El
+> enforcement en Firestore/Functions queda pendiente (se activa en consola tras medir). Junto con esto
+> se migró todo el **BoM de Firebase a la generación 4.x/6.x** (incluida la reescritura del login con
+> `google_sign_in 7.x`: singleton + `initialize()` + `authenticate()`). El **warning KGP** no se pudo
+> eliminar aún (bloqueado por `cloud_firestore`, ver «Pendiente»).
+> Ficha: [`docs/features/app-check.md`](docs/features/app-check.md).
+>
+> **Siguiente — Fases 8–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
+> (perfil/progresión/leaderboards, monetización, comunicación…).
