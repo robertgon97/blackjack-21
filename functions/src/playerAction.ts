@@ -11,6 +11,7 @@ import {
   resolverMano,
 } from './blackjack';
 import { evaluarLogros } from './logros';
+import { idSemanaIso } from './semana';
 
 interface DatosJugador {
   manos: Mano[];
@@ -92,6 +93,18 @@ export const playerAction = onCall(
       const userDocs = await Promise.all(userRefs.map((r) => tx.get(r)));
       const userDataMap = Object.fromEntries(
         playerUids.map((id, i) => [id, userDocs[i].data() ?? {}]),
+      );
+
+      // Leaderboard semanal (Fase 10): se lee la entrada del periodo actual de
+      // cada jugador en la fase de reads para poder acumular `gananciaNeta` y
+      // calcular el máximo de `mejorRacha` de la semana antes de escribir.
+      const periodoLb = idSemanaIso(new Date());
+      const lbCol = db.collection('leaderboards').doc(periodoLb).collection('entries');
+      const lbDocs = await Promise.all(
+        playerUids.map((id) => tx.get(lbCol.doc(id))),
+      );
+      const lbDataMap = Object.fromEntries(
+        playerUids.map((id, i) => [id, lbDocs[i].data() ?? {}]),
       );
 
       // ── FASE 2: LÓGICA PURA ────────────────────────────────────────────────
@@ -254,6 +267,8 @@ export const playerAction = onCall(
         delta: number;
         description: string;
         stats: EstadisticasJugador;
+        ganadasRonda: number;
+        mainResult: ResultadoMano;
       }> = [];
 
       for (const [pUid, pData] of Object.entries(updatedPlayers)) {
@@ -285,11 +300,17 @@ export const playerAction = onCall(
           deltaTotal,
         );
 
+        const ganadasRonda = resultados.filter(
+          (r) => r === 'win' || r === 'blackjack',
+        ).length;
+
         balanceUpdates.push({
           uid: pUid,
           delta: deltaTotal,
           description: `Ronda ${(room.round as number) || 1}: ${mainResult}`,
           stats: nuevasStats,
+          ganadasRonda,
+          mainResult,
         });
       }
 
@@ -307,7 +328,14 @@ export const playerAction = onCall(
       // valide el saldo al día (si no, quedaría el de cuando el jugador se unió).
       const roomUpdate: Record<string, unknown> = { status: 'finished' };
 
-      for (const { uid: pUid, delta, description, stats } of balanceUpdates) {
+      for (const {
+        uid: pUid,
+        delta,
+        description,
+        stats,
+        ganadasRonda,
+        mainResult,
+      } of balanceUpdates) {
         const currentBalance = (userDataMap[pUid]?.['balance'] as number) || 0;
         const newBalance = Math.max(0, currentBalance + delta);
         const userRef = db.collection('users').doc(pUid);
@@ -325,6 +353,40 @@ export const playerAction = onCall(
         }
 
         tx.update(userRef, userUpdate);
+
+        // Leaderboard semanal (Fase 10): acumula la entrada del periodo actual.
+        // gananciaNeta y manosGanadas se suman. La racha es PROPIA de la semana
+        // (`rachaActualSemana`), NO la global de stats: arranca en 0 cada periodo
+        // (lbPrev vacío) y sigue la misma regla que la racha global (ganar suma,
+        // empate mantiene, perder/rendirse reinicia). `mejorRacha` es su máximo.
+        const lbPrev = lbDataMap[pUid];
+        const userData = userDataMap[pUid] ?? {};
+        const rachaPrev = (lbPrev['rachaActualSemana'] as number) ?? 0;
+        let rachaActualSemana: number;
+        if (mainResult === 'win' || mainResult === 'blackjack') {
+          rachaActualSemana = rachaPrev + 1;
+        } else if (mainResult === 'push') {
+          rachaActualSemana = rachaPrev;
+        } else {
+          rachaActualSemana = 0;
+        }
+        tx.set(
+          lbCol.doc(pUid),
+          {
+            uid: pUid,
+            displayName: (userData['displayName'] as string) ?? 'Jugador',
+            avatar: (userData['avatar'] as string) ?? '🃏',
+            gananciaNeta: ((lbPrev['gananciaNeta'] as number) ?? 0) + delta,
+            manosGanadas: ((lbPrev['manosGanadas'] as number) ?? 0) + ganadasRonda,
+            rachaActualSemana,
+            mejorRacha: Math.max(
+              (lbPrev['mejorRacha'] as number) ?? 0,
+              rachaActualSemana,
+            ),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
         tx.set(userRef.collection('transactions').doc(), {
           type: delta >= 0 ? 'win' : 'loss',
           amount: Math.abs(delta),

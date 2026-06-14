@@ -8,3 +8,4 @@ export { startRound } from './startRound';
 export { playerAction } from './playerAction';
 export { resolveSoloRound } from './soloRound';
 export { claimDailyBonus } from './dailyBonus';
+export { purgarLeaderboards } from './leaderboard';

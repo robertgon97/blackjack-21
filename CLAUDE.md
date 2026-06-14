@@ -116,7 +116,7 @@ lib/
 ## Tests
 
 ```bash
-flutter test                           # corre los 62 tests de domain
+flutter test                           # corre los 70 tests de domain
 flutter test --reporter=expanded       # con detalle de cada test
 ```
 
@@ -173,8 +173,11 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > - [#56](https://github.com/robertgon97/blackjack-21/issues/56) — Migrar modelos a `freezed` + `json_serializable`.
 > - [#57](https://github.com/robertgon97/blackjack-21/issues/57) — Providers de Riverpod + ficha de feature de `comms`.
 
-- **Fase 10 (siguiente):** leaderboards semanales + top de amigos + bono diario + misiones. Hoja de ruta
-  en [`docs/plans/02-perfil-progresion-y-leaderboards.md`](docs/plans/02-perfil-progresion-y-leaderboards.md).
+- **Fase 10 (en curso):** se entrega en sub-PRs. ✅ **10a** leaderboards semanales + top de amigos
+  (`features/leaderboards/`, ficha [`docs/features/leaderboards.md`](docs/features/leaderboards.md)).
+  Pendientes: **10b** bono diario con racha (ampliar `claimDailyBonus`), **10c** misiones
+  diarias/semanales. Hoja de ruta en
+  [`docs/plans/02-perfil-progresion-y-leaderboards.md`](docs/plans/02-perfil-progresion-y-leaderboards.md).
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
@@ -234,5 +237,12 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > y **toast** al desbloquear vía `ref.listen(logrosProvider)` global en `app.dart` (con
 > `scaffoldMessengerKey`). Ficha: [`docs/features/progresion.md`](docs/features/progresion.md).
 >
-> **Siguiente — Fases 10–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
-> (leaderboards, monetización, comunicación…).
+> **Hecho en Fase 10a:** leaderboards semanales en `features/leaderboards/`. Ranking por semana ISO
+> (`leaderboards/{periodo}/entries/{uid}`) con 3 métricas (ganancia neta, manos ganadas, mejor racha),
+> top global + top de amigos + posición propia. `playerAction` agrega la entrada de la semana en su
+> transacción; scheduled function `purgarLeaderboards` (`onSchedule`) purga periodos > 8 semanas. Util de
+> semana ISO `core/utils/semana.dart` ↔ `functions/src/semana.ts`. `firestore.rules` protege
+> `leaderboards`. Ficha: [`docs/features/leaderboards.md`](docs/features/leaderboards.md).
+>
+> **Siguiente — Fase 10b/10c y 11–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
+> (bono diario con racha, misiones, monetización, comunicación…).

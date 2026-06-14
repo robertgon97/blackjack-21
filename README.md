@@ -18,7 +18,7 @@ Disponible en **Android**, **Web**, **Windows** e **iOS**.
 | 7 | Endurecimiento del backend: App Check | ✅ Completa (modo monitor) |
 | 8 | Perfil + estadísticas de juego | ✅ Completa |
 | 9 | Progresión: niveles/XP + logros | ✅ Completa |
-| 10 | Leaderboards + bono diario + misiones | 🔲 Pendiente |
+| 10 | Leaderboards + bono diario + misiones | 🚧 En curso (10a: leaderboards) |
 | 11 | Monetización y pulido (anuncios, PWA, push) | 🔲 Pendiente |
 | 12 | Remote Config + A/B Testing | 🔲 Pendiente |
 | 13 | Comunicación en sala (chat + voz + cámara) | 🔲 Pendiente |
