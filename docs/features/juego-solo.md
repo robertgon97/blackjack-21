@@ -21,12 +21,20 @@ reimplementa** reglas; solo orquesta las funciones puras de `game/domain/`.
 - El crupier juega automáticamente con `debePedirCrupier(...)` (regla H17 configurable).
 - Resolución y pagos con `resolverMano(...)`: blackjack natural paga `pagoBlackjack` (3:2 o 6:5);
   seguro paga 2:1 si el crupier tiene blackjack.
-- Si la banca llega a $0, se ofrece un **préstamo de $500** para seguir jugando.
+- El saldo de la banca es el **balance real del usuario** (`users/{uid}.balance`): se lee al entrar y
+  se **persiste tras cada ronda** mediante la Cloud Function `resolveSoloRound` (no se puede escribir
+  desde el cliente — campo protegido por las reglas anti-trampa).
 
 ## Modelo de datos tocado
 
-Ninguno todavía. En la Fase 2 el estado es **local en memoria** (no se persiste). La persistencia del
-saldo llega en la Fase 3 (auth + wallet) — ver [`../arquitectura/modelo-datos.md`](../arquitectura/modelo-datos.md).
+`users/{uid}.balance` (lectura vía `saldoStream`; escritura **solo** vía la Function `resolveSoloRound`)
+y la subcolección `users/{uid}/transactions` (registro de cada ronda). Ver
+[`../arquitectura/modelo-datos.md`](../arquitectura/modelo-datos.md).
+
+> **Persistencia del saldo (issue #30):** hasta esta corrección la banca vivía solo en memoria
+> (arrancaba en 1000 y no se guardaba), así que al reiniciar la app se perdía. Ahora el juego solo lee
+> el balance real y lo actualiza server-side. La **recarga** cuando el saldo llega a $0 (antiguo
+> "préstamo" local) queda **pendiente** de un mecanismo server-side (bono/recarga); el botón solo avisa.
 
 ## Estructura del código
 
@@ -37,6 +45,9 @@ core/theme/
 
 features/game/
 ├── domain/               ← (Fase 1) lógica pura: cartas, reglas, estrategia, modelos
+│   └── i_resultado_solo_repository.dart  ← interfaz: persistir el resultado de la ronda
+├── data/
+│   └── cloud_resultado_solo_repository.dart  ← impl: llama la Function resolveSoloRound
 └── presentation/
     ├── estado_juego.dart       ← estado inmutable (FaseJuego, SignoResultado) + copyWith
     ├── controlador_juego.dart  ← Notifier: orquesta dominio + shoe + dinero + animaciones
@@ -64,12 +75,24 @@ Responsabilidades clave:
 
 ## Cloud Functions relacionadas
 
-Ninguna. En el juego solo todo corre en el cliente. El reparto/resolución en servidor llega con el
-multijugador (Fase 5) por anti-trampa.
+- **`resolveSoloRound`** (`functions/src/soloRound.ts`): recibe la ronda terminada (manos del jugador,
+  mano del crupier, seguro, config), **revalida el resultado** con la lógica compartida
+  `functions/src/blackjack.ts` (espejo de `cartas.dart`/`reglas.dart`) sin confiar en el cliente,
+  comprueba que la apuesta no supera el saldo y que el crupier jugó según las reglas, y actualiza
+  `users/{uid}.balance` + registra la transacción. Ver
+  [`../arquitectura/seguridad.md`](../arquitectura/seguridad.md).
+
+> **Limitación conocida (Opción B):** el reparto sigue siendo client-side, así que el cliente elige las
+> cartas. La Function valida las *reglas* (no puedes ganar con cartas perdedoras ni plantar al crupier
+> antes de 17), pero el reparto server-side completo (shoe oculto, como el multijugador) queda como
+> hardening futuro.
 
 ## Casos borde
 
-- **Sin saldo** (banca ≤ 0 tras una ronda) → se muestra el botón de préstamo en vez de "Nueva mano".
+- **Sin saldo** (banca ≤ 0 tras una ronda) → el botón de recarga avisa que estará disponible
+  próximamente (la recarga server-side es un follow-up; ya no se "presta" en local).
+- **Fallo de red al guardar** → la ronda se muestra igual; se avisa que el saldo no se guardó y se
+  reconcilia con Firestore al reabrir (la banca local no es autoritativa).
 - **Blackjack natural** (21 con 2 cartas, sin split ni doble) → resuelve de inmediato y paga 3:2/6:5.
 - **Split de ases** → cada mano recibe **una sola carta** y se planta automáticamente.
 - **Crupier con As** → se ofrece seguro antes del turno; solo si la banca cubre la mitad de la apuesta.

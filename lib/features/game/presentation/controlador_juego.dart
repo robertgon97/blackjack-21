@@ -12,11 +12,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/telemetria/telemetria_provider.dart';
+import '../../wallet/presentation/wallet_provider.dart';
 import '../domain/cartas.dart';
 import '../domain/estrategia.dart';
+import '../domain/i_resultado_solo_repository.dart';
 import '../domain/modelos.dart';
 import '../domain/reglas.dart';
 import 'estado_juego.dart';
+import 'resultado_solo_provider.dart';
 
 /// Provider del estado de la partida solo.
 final controladorJuegoProvider =
@@ -32,13 +35,33 @@ const int _pausaCrupier = 620;
 class ControladorJuego extends Notifier<EstadoJuego> {
   late Shoe _shoe;
   late IServicioTelemetria _telemetria;
+  late IResultadoSoloRepository _resultadoRepo;
 
   @override
   EstadoJuego build() {
     _telemetria = ref.read(servicioTelemetriaProvider);
+    _resultadoRepo = ref.read(resultadoSoloRepositoryProvider);
     const config = ConfigJuego();
     _shoe = Shoe(config.numBarajas);
-    final estado = EstadoJuego.inicial(config);
+    var estado = EstadoJuego.inicial(config);
+
+    // La banca arranca con el saldo REAL del usuario (Firestore). Si aún no ha
+    // cargado, usa el del config y se corrige en cuanto el saldo emita.
+    final saldoActual = ref.read(saldoProvider).valueOrNull;
+    if (saldoActual != null) {
+      estado = estado.copyWith(banca: saldoActual);
+    }
+    // Sincroniza la banca con el saldo de Firestore SOLO fuera de una ronda
+    // (fase apuestas), para no pisar la banca local mientras se juega.
+    ref.listen(saldoProvider, (_, next) {
+      final saldo = next.valueOrNull;
+      if (saldo != null &&
+          state.fase == FaseJuego.apuestas &&
+          state.banca != saldo) {
+        state = state.copyWith(banca: saldo);
+      }
+    });
+
     return _conInfoShoe(estado);
   }
 
@@ -506,6 +529,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   // ----------------------------------------------------------
 
   Future<void> _finalizarRonda() async {
+    final seguroRonda = state.seguro; // se resetea abajo; el server lo necesita
     var banca = state.banca;
     var netoTotal = 0;
     final partes = <String>[];
@@ -580,6 +604,30 @@ class ControladorJuego extends Notifier<EstadoJuego> {
         probabilidad: '',
       ),
     );
+
+    // Persiste el resultado server-side: la Cloud Function revalida con las
+    // reglas y actualiza el balance real (el cliente no puede escribirlo).
+    await _persistirResultado(seguroRonda);
+  }
+
+  /// Envía la ronda terminada a la Cloud Function y sincroniza la banca con el
+  /// balance autoritativo que devuelve. No relanza: si falla (red), conserva la
+  /// banca local y avisa; Firestore se reconcilia al reabrir.
+  Future<void> _persistirResultado(int seguro) async {
+    try {
+      final nuevoBalance = await _resultadoRepo.registrarRonda(
+        manos: state.manos,
+        manoCrupier: state.manoCrupier,
+        seguro: seguro,
+        config: state.config,
+      );
+      if (state.fase == FaseJuego.resultado && state.banca != nuevoBalance) {
+        state = state.copyWith(banca: nuevoBalance);
+      }
+    } catch (e, s) {
+      await _telemetria.registrarError(e, s);
+      _avisar('No se pudo guardar tu saldo. Revisa tu conexión.');
+    }
   }
 
   // ----------------------------------------------------------
@@ -603,11 +651,14 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     );
   }
 
-  /// Préstamo de emergencia cuando la banca llega a cero.
+  /// Recarga de saldo cuando la banca llega a cero.
+  ///
+  /// El saldo ahora es real y server-authoritative: no se puede "prestar" en
+  /// local (el servidor rechazaría apostar por encima del balance, y al reabrir
+  /// se perdería). La recarga legítima (bono/préstamo) server-side queda
+  /// pendiente. Ver docs/features/juego-solo.md.
   void pedirPrestamo() {
     if (state.animando || state.fase != FaseJuego.resultado) return;
-    state = state.copyWith(banca: state.banca + 500);
-    _avisar('Préstamo de \$500 concedido.');
-    nuevaRonda();
+    _avisar('La recarga de saldo estará disponible próximamente.');
   }
 }
