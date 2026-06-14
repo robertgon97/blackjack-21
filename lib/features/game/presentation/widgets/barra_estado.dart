@@ -1,20 +1,18 @@
 // ============================================================
-//  Barra superior: dinero, info del shoe, tema y ajustes
+//  Barra superior: datos del juego (banca, en juego, conteo) y
+//  el botón que abre el menú lateral (issue #67).
 // ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/tema_provider.dart';
 import '../../../../core/theme/temas.dart';
 import '../../../../core/utils/formato.dart';
 import '../controlador_juego.dart';
-import '../estado_juego.dart';
-import 'panel_ajustes.dart';
 
-/// Cabecera con la banca, lo apostado, el conteo (si está activo) y los
-/// selectores de tema y ajustes.
+/// Cabecera con la banca, lo apostado y el conteo (si está activo), más el
+/// acceso al menú lateral. La navegación a perfil/misiones/ranking/etc. y el
+/// tema viven ahora en el [MenuDrawer], no en esta barra.
 class BarraEstado extends ConsumerWidget {
   const BarraEstado({super.key});
 
@@ -29,11 +27,9 @@ class BarraEstado extends ConsumerWidget {
           mostrarConteo: e.config.mostrarConteo,
           conteoCorrido: e.conteoCorrido,
           conteoVerdadero: e.conteoVerdadero,
-          enRonda: e.fase == FaseJuego.jugando || e.fase == FaseJuego.seguro,
         ),
       ),
     );
-    final temaActual = ref.watch(temaProvider);
     final acento = context.tapete.acento;
 
     return Container(
@@ -56,77 +52,12 @@ class BarraEstado extends ConsumerWidget {
             ),
           ],
           const Spacer(),
-          // Selector de tema.
-          PopupMenuButton<TemaApp>(
-            tooltip: 'Tema',
-            initialValue: temaActual,
-            onSelected: (t) => ref.read(temaProvider.notifier).seleccionar(t),
-            itemBuilder: (context) => [
-              for (final t in TemaApp.values)
-                PopupMenuItem<TemaApp>(
-                  value: t,
-                  child: Text('${t.icono}  ${t.nombre}'),
-                ),
-            ],
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(temaActual.icono, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_drop_down, color: Colors.white),
-              ],
-            ),
-          ),
           IconButton(
-            tooltip: 'Mi perfil',
-            icon: const Icon(Icons.account_circle, color: Colors.white),
-            onPressed: () => context.push('/perfil'),
-          ),
-          IconButton(
-            tooltip: 'Misiones',
-            icon: const Icon(Icons.checklist, color: Colors.white),
-            onPressed: () => context.push('/misiones'),
-          ),
-          IconButton(
-            tooltip: 'Bono diario',
-            icon: const Icon(Icons.card_giftcard, color: Colors.white),
-            onPressed: () => context.push('/bono'),
-          ),
-          IconButton(
-            tooltip: 'Ranking',
-            icon: const Icon(Icons.leaderboard, color: Colors.white),
-            onPressed: () => context.push('/leaderboard'),
-          ),
-          IconButton(
-            tooltip: 'Multijugador',
-            icon: const Icon(Icons.groups, color: Colors.white),
-            onPressed: () => context.push('/lobby'),
-          ),
-          IconButton(
-            tooltip: 'Amigos',
-            icon: const Icon(Icons.people, color: Colors.white),
-            onPressed: () => context.push('/friends'),
-          ),
-          IconButton(
-            tooltip: 'Ajustes',
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () => _abrirAjustes(context, ref),
+            tooltip: 'Menú',
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ],
-      ),
-    );
-  }
-
-  void _abrirAjustes(BuildContext context, WidgetRef ref) {
-    final ctrl = ref.read(controladorJuegoProvider.notifier);
-    final configActual = ref.read(controladorJuegoProvider).config;
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (_) => PanelAjustes(
-        config: configActual,
-        onGuardar: ctrl.aplicarConfig,
       ),
     );
   }
