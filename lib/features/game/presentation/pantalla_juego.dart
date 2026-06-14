@@ -204,13 +204,13 @@ class _PanelControl extends ConsumerWidget {
       case FaseJuego.resultado:
         if (estado.sinDinero) {
           return FilledButton.icon(
-            onPressed: ctrl.pedirPrestamo,
+            onPressed: () => ctrl.pedirPrestamo(),
             style: FilledButton.styleFrom(
               backgroundColor: acento,
               foregroundColor: Colors.black,
             ),
-            icon: const Icon(Icons.savings),
-            label: const Text('Pedir préstamo (\$500)'),
+            icon: const Icon(Icons.card_giftcard),
+            label: const Text('Reclamar bono diario (\$500)'),
           );
         }
         return FilledButton.icon(

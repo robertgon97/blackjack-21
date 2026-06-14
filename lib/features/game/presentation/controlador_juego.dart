@@ -12,11 +12,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/telemetria/telemetria_provider.dart';
+import '../../wallet/presentation/wallet_provider.dart';
 import '../domain/cartas.dart';
 import '../domain/estrategia.dart';
+import '../domain/i_resultado_solo_repository.dart';
 import '../domain/modelos.dart';
 import '../domain/reglas.dart';
 import 'estado_juego.dart';
+import 'resultado_solo_provider.dart';
 
 /// Provider del estado de la partida solo.
 final controladorJuegoProvider =
@@ -32,13 +35,40 @@ const int _pausaCrupier = 620;
 class ControladorJuego extends Notifier<EstadoJuego> {
   late Shoe _shoe;
   late IServicioTelemetria _telemetria;
+  late IResultadoSoloRepository _resultadoRepo;
+
+  /// `true` cuando el saldo real del usuario ya emitió desde Firestore. Hasta
+  /// entonces no se reparte: la banca no es autoritativa y apostar contra un
+  /// saldo fantasma haría que el guardado server-side fallara después.
+  bool _saldoCargado = false;
 
   @override
   EstadoJuego build() {
     _telemetria = ref.read(servicioTelemetriaProvider);
+    _resultadoRepo = ref.read(resultadoSoloRepositoryProvider);
     const config = ConfigJuego();
     _shoe = Shoe(config.numBarajas);
-    final estado = EstadoJuego.inicial(config);
+    var estado = EstadoJuego.inicial(config);
+
+    // La banca arranca con el saldo REAL del usuario (Firestore). Mientras no
+    // haya cargado, arranca en 0 y `repartir` queda bloqueado: NO se usa el
+    // default del config para no apostar contra un saldo fantasma que el
+    // servidor rechazaría al persistir.
+    final saldoActual = ref.read(saldoProvider).valueOrNull;
+    estado = estado.copyWith(banca: saldoActual ?? 0);
+    _saldoCargado = saldoActual != null;
+
+    // Sincroniza la banca con el saldo de Firestore SOLO fuera de una ronda
+    // (fase apuestas), para no pisar la banca local mientras se juega.
+    ref.listen(saldoProvider, (_, next) {
+      final saldo = next.valueOrNull;
+      if (saldo == null) return;
+      _saldoCargado = true;
+      if (state.fase == FaseJuego.apuestas && state.banca != saldo) {
+        state = state.copyWith(banca: saldo);
+      }
+    });
+
     return _conInfoShoe(estado);
   }
 
@@ -140,6 +170,10 @@ class ControladorJuego extends Notifier<EstadoJuego> {
 
   Future<void> repartir() async {
     if (state.animando || state.fase != FaseJuego.apuestas) return;
+    if (!_saldoCargado) {
+      _avisar('Cargando tu saldo, espera un momento.');
+      return;
+    }
     if (state.apuesta < state.config.apuestaMin) {
       _avisar('Apuesta mínima: \$${state.config.apuestaMin}.');
       return;
@@ -506,6 +540,7 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   // ----------------------------------------------------------
 
   Future<void> _finalizarRonda() async {
+    final seguroRonda = state.seguro; // se resetea abajo; el server lo necesita
     var banca = state.banca;
     var netoTotal = 0;
     final partes = <String>[];
@@ -580,6 +615,30 @@ class ControladorJuego extends Notifier<EstadoJuego> {
         probabilidad: '',
       ),
     );
+
+    // Persiste el resultado server-side: la Cloud Function revalida con las
+    // reglas y actualiza el balance real (el cliente no puede escribirlo).
+    await _persistirResultado(seguroRonda);
+  }
+
+  /// Envía la ronda terminada a la Cloud Function y sincroniza la banca con el
+  /// balance autoritativo que devuelve. No relanza: si falla (red), conserva la
+  /// banca local y avisa; Firestore se reconcilia al reabrir.
+  Future<void> _persistirResultado(int seguro) async {
+    try {
+      final nuevoBalance = await _resultadoRepo.registrarRonda(
+        manos: state.manos,
+        manoCrupier: state.manoCrupier,
+        seguro: seguro,
+        config: state.config,
+      );
+      if (state.fase == FaseJuego.resultado && state.banca != nuevoBalance) {
+        state = state.copyWith(banca: nuevoBalance);
+      }
+    } catch (e, s) {
+      await _telemetria.registrarError(e, s);
+      _avisar('No se pudo guardar tu saldo. Revisa tu conexión.');
+    }
   }
 
   // ----------------------------------------------------------
@@ -603,11 +662,25 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     );
   }
 
-  /// Préstamo de emergencia cuando la banca llega a cero.
-  void pedirPrestamo() {
+  /// Reclama el **bono diario** ($500, una vez cada 24 h) vía Cloud Function.
+  ///
+  /// El saldo es server-authoritative (no se puede "prestar" en local), así que
+  /// la recarga la acredita el servidor y devuelve el nuevo balance. Si está en
+  /// cooldown o falla la red, avisa con el mensaje correspondiente.
+  Future<void> pedirPrestamo() async {
     if (state.animando || state.fase != FaseJuego.resultado) return;
-    state = state.copyWith(banca: state.banca + 500);
-    _avisar('Préstamo de \$500 concedido.');
-    nuevaRonda();
+    try {
+      final nuevoBalance =
+          await ref.read(walletRepositoryProvider).reclamarBonoDiario();
+      state = state.copyWith(banca: nuevoBalance);
+      _avisar('¡Bono diario de \$500 reclamado!');
+      nuevaRonda();
+    } catch (e) {
+      _avisar(
+        e is Exception
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'No se pudo reclamar el bono.',
+      );
+    }
   }
 }

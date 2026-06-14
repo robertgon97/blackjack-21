@@ -6,3 +6,5 @@ export { transferCredits } from './transfers';
 export { claimConversionBonus } from './conversion';
 export { startRound } from './startRound';
 export { playerAction } from './playerAction';
+export { resolveSoloRound } from './soloRound';
+export { claimDailyBonus } from './dailyBonus';
