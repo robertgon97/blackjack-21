@@ -20,7 +20,10 @@ neta, manos ganadas y mejor racha— con **top global**, **top entre amigos** y 
   "se abre" implícitamente al cambiar la semana; los antiguos se purgan (retención de 8 semanas) con la
   scheduled function `purgarLeaderboards`.
 - **Métricas (acumuladas en la semana):** `gananciaNeta` (suma de deltas, puede ser negativa),
-  `manosGanadas` (suma), `mejorRacha` (máximo de la racha actual alcanzada durante la semana).
+  `manosGanadas` (suma), `mejorRacha` (máximo de la racha **propia de la semana**). La racha del
+  leaderboard se rastrea aparte de la racha global de `stats` (que no se reinicia por semana): se guarda
+  `rachaActualSemana` en la entrada y arranca en 0 cada periodo, evitando heredar la racha de la semana
+  anterior.
 
 ## Modelo de datos tocado
 

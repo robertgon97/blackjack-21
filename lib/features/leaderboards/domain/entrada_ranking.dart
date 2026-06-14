@@ -32,7 +32,11 @@ class EntradaRanking {
 
   /// Créditos netos ganados en la semana (puede ser negativo).
   final int gananciaNeta;
+
+  /// Manos ganadas en la semana (acumulado).
   final int manosGanadas;
+
+  /// Mayor racha de victorias consecutivas alcanzada en la semana.
   final int mejorRacha;
 
   /// Valor de la [metrica] indicada (para ordenar y mostrar).

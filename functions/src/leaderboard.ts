@@ -37,11 +37,13 @@ export const purgarLeaderboards = onSchedule(
 
     // listDocuments incluye documentos "fantasma" (sin campos pero con
     // subcolección entries), que es justo como quedan los periodos.
+    // Se borran en paralelo: si el job falló varias semanas, pueden acumularse
+    // varios periodos vencidos y los borrados secuenciales rozarían el timeout.
     const periodos = await db.collection('leaderboards').listDocuments();
-    for (const ref of periodos) {
-      if (!aRetener.has(ref.id)) {
-        await db.recursiveDelete(ref);
-      }
-    }
+    await Promise.all(
+      periodos
+        .filter((ref) => !aRetener.has(ref.id))
+        .map((ref) => db.recursiveDelete(ref)),
+    );
   },
 );

@@ -11,15 +11,19 @@ final leaderboardRepositoryProvider = Provider<ILeaderboardRepository>(
   (_) => FirestoreLeaderboardRepository(),
 );
 
+// Todos los providers son `.autoDispose`: se descartan al salir de la página de
+// ranking y se recargan al volver, para que los datos no queden congelados (y se
+// libere el listener de Firestore del top global).
+
 /// Top global de la semana actual por [metrica] (tiempo real).
 final topGlobalProvider =
-    StreamProvider.family<List<EntradaRanking>, MetricaRanking>(
+    StreamProvider.autoDispose.family<List<EntradaRanking>, MetricaRanking>(
   (ref, metrica) => ref.watch(leaderboardRepositoryProvider).topGlobal(metrica),
 );
 
 /// Top de amigos aceptados (+ uno mismo) por [metrica].
 final topAmigosProvider =
-    FutureProvider.family<List<EntradaRanking>, MetricaRanking>(
+    FutureProvider.autoDispose.family<List<EntradaRanking>, MetricaRanking>(
   (ref, metrica) async {
     final perfil = ref.watch(perfilStreamProvider).valueOrNull;
     if (perfil == null) return const [];
@@ -35,15 +39,16 @@ final topAmigosProvider =
 );
 
 /// Mi entrada de la semana actual (o `null` si no jugué multijugador esta semana).
-final miEntradaProvider = FutureProvider<EntradaRanking?>((ref) async {
+final miEntradaProvider =
+    FutureProvider.autoDispose<EntradaRanking?>((ref) async {
   final perfil = ref.watch(perfilStreamProvider).valueOrNull;
   if (perfil == null) return null;
   return ref.watch(leaderboardRepositoryProvider).entradaDe(perfil.uid);
 });
 
 /// Mi posición global por [metrica], o `null` si no tengo entrada esta semana.
-final miPosicionProvider =
-    FutureProvider.family<int?, MetricaRanking>((ref, metrica) async {
+final miPosicionProvider = FutureProvider.autoDispose
+    .family<int?, MetricaRanking>((ref, metrica) async {
   final entrada = await ref.watch(miEntradaProvider.future);
   if (entrada == null) return null;
   return ref

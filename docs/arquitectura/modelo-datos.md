@@ -106,7 +106,8 @@ function (`purgarLeaderboards`) borra los periodos con más de 8 semanas de anti
 | `avatar` | string | Avatar cacheado |
 | `gananciaNeta` | int | 🔒 Créditos netos de la semana (acumulado, puede ser negativo) |
 | `manosGanadas` | int | 🔒 Manos ganadas en la semana (acumulado) |
-| `mejorRacha` | int | 🔒 Mayor racha de victorias alcanzada en la semana |
+| `rachaActualSemana` | int | 🔒 Racha de victorias en curso, propia de la semana (arranca en 0 cada periodo) |
+| `mejorRacha` | int | 🔒 Máximo de `rachaActualSemana` en la semana (métrica del ranking) |
 | `updatedAt` | timestamp | Última ronda agregada |
 
 ## Notas de diseño

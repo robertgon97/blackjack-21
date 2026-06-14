@@ -268,6 +268,7 @@ export const playerAction = onCall(
         description: string;
         stats: EstadisticasJugador;
         ganadasRonda: number;
+        mainResult: ResultadoMano;
       }> = [];
 
       for (const [pUid, pData] of Object.entries(updatedPlayers)) {
@@ -309,6 +310,7 @@ export const playerAction = onCall(
           description: `Ronda ${(room.round as number) || 1}: ${mainResult}`,
           stats: nuevasStats,
           ganadasRonda,
+          mainResult,
         });
       }
 
@@ -326,7 +328,14 @@ export const playerAction = onCall(
       // valide el saldo al día (si no, quedaría el de cuando el jugador se unió).
       const roomUpdate: Record<string, unknown> = { status: 'finished' };
 
-      for (const { uid: pUid, delta, description, stats, ganadasRonda } of balanceUpdates) {
+      for (const {
+        uid: pUid,
+        delta,
+        description,
+        stats,
+        ganadasRonda,
+        mainResult,
+      } of balanceUpdates) {
         const currentBalance = (userDataMap[pUid]?.['balance'] as number) || 0;
         const newBalance = Math.max(0, currentBalance + delta);
         const userRef = db.collection('users').doc(pUid);
@@ -346,10 +355,21 @@ export const playerAction = onCall(
         tx.update(userRef, userUpdate);
 
         // Leaderboard semanal (Fase 10): acumula la entrada del periodo actual.
-        // gananciaNeta y manosGanadas se suman; mejorRacha es el máximo de la
-        // racha actual alcanzada durante la semana (la racha vive en stats).
+        // gananciaNeta y manosGanadas se suman. La racha es PROPIA de la semana
+        // (`rachaActualSemana`), NO la global de stats: arranca en 0 cada periodo
+        // (lbPrev vacío) y sigue la misma regla que la racha global (ganar suma,
+        // empate mantiene, perder/rendirse reinicia). `mejorRacha` es su máximo.
         const lbPrev = lbDataMap[pUid];
         const userData = userDataMap[pUid] ?? {};
+        const rachaPrev = (lbPrev['rachaActualSemana'] as number) ?? 0;
+        let rachaActualSemana: number;
+        if (mainResult === 'win' || mainResult === 'blackjack') {
+          rachaActualSemana = rachaPrev + 1;
+        } else if (mainResult === 'push') {
+          rachaActualSemana = rachaPrev;
+        } else {
+          rachaActualSemana = 0;
+        }
         tx.set(
           lbCol.doc(pUid),
           {
@@ -358,9 +378,10 @@ export const playerAction = onCall(
             avatar: (userData['avatar'] as string) ?? '🃏',
             gananciaNeta: ((lbPrev['gananciaNeta'] as number) ?? 0) + delta,
             manosGanadas: ((lbPrev['manosGanadas'] as number) ?? 0) + ganadasRonda,
+            rachaActualSemana,
             mejorRacha: Math.max(
               (lbPrev['mejorRacha'] as number) ?? 0,
-              stats.rachaActual,
+              rachaActualSemana,
             ),
             updatedAt: FieldValue.serverTimestamp(),
           },
