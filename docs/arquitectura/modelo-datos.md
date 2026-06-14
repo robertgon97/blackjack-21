@@ -16,8 +16,8 @@ El documento de perfil de cada usuario. El `uid` es el de Firebase Auth.
 | `inviteCode` | string | Código único para invitar (ej. `ROB-X4K2`) |
 | `isAnonymous` | bool | `true` si es cuenta demo sin registrar |
 | `conversionBonusGranted` | bool | 🔒 `true` tras dar el bono de conversión demo → cuenta real (idempotencia) |
-| `stats` | map | 🔒 Estadísticas de juego (Fase 8). Solo `playerAction` las escribe: `{ manosJugadas, ganadas, perdidas, empates, blackjacks, mayorGanancia, rachaActual, mejorRacha, totalApostado, totalGanado }`. Solo el multijugador las alimenta |
-| `nivel` | int | (Fase 9) Nivel actual, derivado de la XP |
+| `stats` | map | 🔒 Estadísticas de juego (Fase 8). Solo `playerAction` las escribe: `{ manosJugadas, ganadas, perdidas, empates, blackjacks, mayorGanancia, rachaActual, mejorRacha, totalApostado, totalGanado, xp }`. Solo el multijugador las alimenta. `xp` (Fase 9) acumula la experiencia |
+| `logros` | array&lt;string&gt; | 🔒 (Fase 9) IDs de logros desbloqueados, escritos por `playerAction` (`arrayUnion`). El nivel **no se almacena**: se deriva de `stats.xp` en el cliente (`profile/domain/niveles.dart`) |
 | `lastAdReward` | timestamp | 🔒 Última vez que cobró un anuncio (throttle) |
 | `createdAt` | timestamp | Fecha de creación |
 | `lastSeen` | timestamp | Última actividad (presencia) |

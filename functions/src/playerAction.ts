@@ -10,6 +10,7 @@ import {
   debePedirCrupier,
   resolverMano,
 } from './blackjack';
+import { evaluarLogros } from './logros';
 
 interface DatosJugador {
   manos: Mano[];
@@ -311,7 +312,16 @@ export const playerAction = onCall(
         const newBalance = Math.max(0, currentBalance + delta);
         const userRef = db.collection('users').doc(pUid);
 
-        tx.update(userRef, { balance: newBalance, stats });
+        // Logros (Fase 9): se evalúan server-side con las stats ya acumuladas y
+        // el saldo resultante; se agregan los nuevos al array existente.
+        const logrosPrevios = (userDataMap[pUid]?.['logros'] as string[]) ?? [];
+        const logrosNuevos = evaluarLogros(stats, newBalance, logrosPrevios);
+        const userUpdate: Record<string, unknown> = { balance: newBalance, stats };
+        if (logrosNuevos.length > 0) {
+          userUpdate['logros'] = FieldValue.arrayUnion(...logrosNuevos);
+        }
+
+        tx.update(userRef, userUpdate);
         tx.set(userRef.collection('transactions').doc(), {
           type: delta >= 0 ? 'win' : 'loss',
           amount: Math.abs(delta),

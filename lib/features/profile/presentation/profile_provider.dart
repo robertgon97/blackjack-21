@@ -15,3 +15,10 @@ final estadisticasProvider = StreamProvider<Estadisticas>((ref) {
   if (perfil == null) return const Stream.empty();
   return ref.watch(profileRepositoryProvider).estadisticasStream(perfil.uid);
 });
+
+/// IDs de logros desbloqueados en tiempo real del usuario autenticado (Fase 9).
+final logrosProvider = StreamProvider<List<String>>((ref) {
+  final perfil = ref.watch(perfilStreamProvider).valueOrNull;
+  if (perfil == null) return const Stream.empty();
+  return ref.watch(profileRepositoryProvider).logrosStream(perfil.uid);
+});

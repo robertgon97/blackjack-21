@@ -153,6 +153,8 @@ export interface EstadisticasJugador {
   mejorRacha: number;
   totalApostado: number;
   totalGanado: number;
+  /** XP acumulada (Fase 9). El nivel se deriva de la XP en el cliente. */
+  xp: number;
 }
 
 /** Estadísticas en cero (usuario sin partidas). */
@@ -168,7 +170,23 @@ export function statsVacias(): EstadisticasJugador {
     mejorRacha: 0,
     totalApostado: 0,
     totalGanado: 0,
+    xp: 0,
   };
+}
+
+/**
+ * XP ganada en una ronda a partir de los resultados de sus manos.
+ * +10 por mano jugada, +15 extra por mano ganada, +40 extra por blackjack.
+ * Función pura para razonarla y testearla aislada.
+ */
+export function xpDeRonda(resultados: ResultadoMano[]): number {
+  let xp = 0;
+  for (const r of resultados) {
+    xp += 10;
+    if (r === 'win' || r === 'blackjack') xp += 15;
+    if (r === 'blackjack') xp += 40;
+  }
+  return xp;
 }
 
 /**
@@ -230,5 +248,6 @@ export function acumularStats(
     mejorRacha: Math.max(base.mejorRacha, rachaActual),
     totalApostado: base.totalApostado + apostadoRonda,
     totalGanado: base.totalGanado + ganadoRonda,
+    xp: base.xp + xpDeRonda(resultados),
   };
 }

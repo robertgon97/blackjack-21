@@ -19,4 +19,12 @@ class FirestoreProfileRepository implements IProfileRepository {
       return Estadisticas.fromMap(stats);
     });
   }
+
+  @override
+  Stream<List<String>> logrosStream(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map((doc) {
+      final logros = doc.data()?['logros'] as List<dynamic>?;
+      return logros?.cast<String>() ?? const <String>[];
+    });
+  }
 }
