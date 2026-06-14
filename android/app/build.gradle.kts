@@ -5,6 +5,8 @@ plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
+    // Genera el "build ID" de Crashlytics requerido por el APK de release con R8.
+    id("com.google.firebase.crashlytics")
     // END: FlutterFire Configuration
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -61,6 +63,16 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // Minificación + ofuscación (R8) activas por seguridad. Las reglas
+            // -keep de Firebase viven en proguard-rules.pro; sin ellas, R8
+            // elimina los ComponentRegistrar y Firebase.initializeApp() falla
+            // (pantalla negra). Ver docs/errores-y-correcciones.md.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
