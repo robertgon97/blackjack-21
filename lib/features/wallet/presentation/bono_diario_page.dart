@@ -104,7 +104,9 @@ class _Contenido extends StatelessWidget {
                   dia: dia,
                   monto: montoPorRacha(dia),
                   conseguido: dia <= estado.racha,
-                  esHoy: estado.disponibleHoy && dia == estado.racha + 1,
+                  // clamp: con racha máxima (≥ tope) el "hoy" sería el día tope.
+                  esHoy: estado.disponibleHoy &&
+                      dia == (estado.racha + 1).clamp(1, topeRachaBono),
                 ),
             ],
           ),

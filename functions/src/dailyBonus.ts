@@ -31,11 +31,13 @@ export const claimDailyBonus = onCall(
     const db = getFirestore();
     const userRef = db.collection('users').doc(uid);
 
-    const ahora = new Date();
-    const hoy = idDiaUtc(ahora);
-    const ayer = idDiaUtc(new Date(ahora.getTime() - 24 * 60 * 60 * 1000));
-
     const resultado = await db.runTransaction(async (tx) => {
+      // Dentro de la transacción para que el día refleje el instante real del
+      // intento (importante si la transacción se reintenta cerca de medianoche).
+      const ahora = new Date();
+      const hoy = idDiaUtc(ahora);
+      const ayer = idDiaUtc(new Date(ahora.getTime() - 24 * 60 * 60 * 1000));
+
       const snap = await tx.get(userRef);
       if (!snap.exists) {
         throw new HttpsError('not-found', 'Perfil de usuario no encontrado.');
