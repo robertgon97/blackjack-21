@@ -37,6 +37,11 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   late IServicioTelemetria _telemetria;
   late IResultadoSoloRepository _resultadoRepo;
 
+  /// `true` cuando el saldo real del usuario ya emitió desde Firestore. Hasta
+  /// entonces no se reparte: la banca no es autoritativa y apostar contra un
+  /// saldo fantasma haría que el guardado server-side fallara después.
+  bool _saldoCargado = false;
+
   @override
   EstadoJuego build() {
     _telemetria = ref.read(servicioTelemetriaProvider);
@@ -45,19 +50,21 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     _shoe = Shoe(config.numBarajas);
     var estado = EstadoJuego.inicial(config);
 
-    // La banca arranca con el saldo REAL del usuario (Firestore). Si aún no ha
-    // cargado, usa el del config y se corrige en cuanto el saldo emita.
+    // La banca arranca con el saldo REAL del usuario (Firestore). Mientras no
+    // haya cargado, arranca en 0 y `repartir` queda bloqueado: NO se usa el
+    // default del config para no apostar contra un saldo fantasma que el
+    // servidor rechazaría al persistir.
     final saldoActual = ref.read(saldoProvider).valueOrNull;
-    if (saldoActual != null) {
-      estado = estado.copyWith(banca: saldoActual);
-    }
+    estado = estado.copyWith(banca: saldoActual ?? 0);
+    _saldoCargado = saldoActual != null;
+
     // Sincroniza la banca con el saldo de Firestore SOLO fuera de una ronda
     // (fase apuestas), para no pisar la banca local mientras se juega.
     ref.listen(saldoProvider, (_, next) {
       final saldo = next.valueOrNull;
-      if (saldo != null &&
-          state.fase == FaseJuego.apuestas &&
-          state.banca != saldo) {
+      if (saldo == null) return;
+      _saldoCargado = true;
+      if (state.fase == FaseJuego.apuestas && state.banca != saldo) {
         state = state.copyWith(banca: saldo);
       }
     });
@@ -163,6 +170,10 @@ class ControladorJuego extends Notifier<EstadoJuego> {
 
   Future<void> repartir() async {
     if (state.animando || state.fase != FaseJuego.apuestas) return;
+    if (!_saldoCargado) {
+      _avisar('Cargando tu saldo, espera un momento.');
+      return;
+    }
     if (state.apuesta < state.config.apuestaMin) {
       _avisar('Apuesta mínima: \$${state.config.apuestaMin}.');
       return;

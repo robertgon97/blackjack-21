@@ -93,7 +93,14 @@ export function resolverMano(
   const crupPuntos = calcularPuntos(dealerCards);
 
   if (mano.rendida) {
-    return { result: 'surrender', delta: -Math.floor(mano.apuesta / 2) };
+    // Espejo de reglas.dart: se recupera `apuesta ~/ 2` (división entera), así
+    // que el neto es esa devolución menos la apuesta. Con apuestas impares esto
+    // difiere de -floor(apuesta/2) (p. ej. 11 → -6, no -5): hay que calcularlo
+    // igual que Dart para que el saldo autoritativo coincida con la UI.
+    return {
+      result: 'surrender',
+      delta: Math.floor(mano.apuesta / 2) - mano.apuesta,
+    };
   }
   if (jugPuntos > 21) {
     return { result: 'lose', delta: -mano.apuesta };
