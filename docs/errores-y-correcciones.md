@@ -258,3 +258,46 @@ por qué es necesario para release.
 declararse explícitamente en `src/main` para que el build de **release** los tenga. Probar siempre un
 APK de release (`flutter build apk --release` + instalar) antes de distribuir a testers, no confiar
 solo en `flutter run` en debug.
+
+---
+
+## 2026-06-13 — Pantalla negra en release (de nuevo): minify R8 + plugin de Crashlytics ausente
+
+**Qué falló:** tras el fix del permiso INTERNET, el APK de **release** (App Distribution) seguía
+arrancando en pantalla negra, mientras que en `flutter run` (debug) la app funcionaba perfecto. El
+`logcat` del APK release mostró que `Firebase.initializeApp()` (línea 12 de `main.dart`) lanzaba
+excepción **antes** de `runApp()`, así que no se montaba ningún widget → pantalla negra. El error real
+estaba encadenado en dos capas:
+
+1. `ComponentDiscovery: Could not instantiate ...CrashlyticsRegistrar / FirebaseInstallationsKtxRegistrar`
+   → `NoSuchMethodException: <init> []`, y luego `FirebaseCrashlytics component is not present`.
+2. Tras añadir reglas `-keep`, el error de fondo se reveló:
+   `IllegalStateException: The Crashlytics build ID is missing. This occurs when the Crashlytics
+   Gradle plugin is missing from your app's build configuration.`
+
+**Causa:** dos problemas que solo se manifiestan en release:
+- **R8/minify** está activo por defecto en el build de release de Flutter (se confirmó con el
+  `mapping.txt` generado y los `r8-map-id-…` en los stack traces). Sin reglas `-keep`, R8 elimina/renombra
+  los `ComponentRegistrar` de Firebase, que se cargan por **reflexión**.
+- En la **Fase 6** se añadió la dependencia Flutter `firebase_crashlytics` pero **nunca el plugin Gradle
+  `com.google.firebase.crashlytics`**. Ese plugin inyecta el "build ID" (recurso de mapeo) que el SDK de
+  Crashlytics exige al iniciar en un APK ofuscado. En debug no hay ofuscación → no se exige → no fallaba.
+
+**Corrección:**
+1. Nuevo `android/app/proguard-rules.pro` con reglas `-keep` para `com.google.firebase.**`,
+   `com.google.android.gms.**`, `* implements ...ComponentRegistrar` y `-keepattributes` de anotaciones/firmas.
+2. `android/app/build.gradle.kts`: `buildTypes.release` declara explícito `isMinifyEnabled = true`,
+   `isShrinkResources = true` y `proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"),
+   "proguard-rules.pro")`. Se aplica el plugin `id("com.google.firebase.crashlytics")`.
+3. `android/settings.gradle.kts`: se declara `com.google.firebase.crashlytics` v3.0.2 (`apply false`) y se
+   sube `com.google.gms.google-services` de 4.3.15 → **4.4.2** (el plugin de Crashlytics v3 exige
+   google-services ≥ 4.4.1).
+
+Verificado: APK release reconstruido, instalado en un Galaxy A15 físico; `logcat` muestra
+`FirebaseApp initialization successful` sin excepciones y la UI del tapete renderiza (ya no hay negro).
+
+**Aprendizaje:** mantener R8/minify (deseable por ofuscación/seguridad) obliga a (a) tener reglas
+`-keep` para todo lo que se cargue por reflexión —Firebase incluido— y (b) aplicar el **plugin Gradle de
+Crashlytics**, no solo la dependencia Flutter. Al activar minify, las dependencias que usan reflexión
+suelen necesitar configuración Gradle extra que en debug pasa desapercibida. Probar siempre el APK de
+release real (no solo debug) tras tocar cualquier cosa de Firebase/Gradle.
