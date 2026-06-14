@@ -58,7 +58,7 @@ jobs:
       - name: Derivar versión del pubspec
         id: version
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed -E 's/^version: *//; s/\+.*//')
+          VERSION=$(grep '^version:' pubspec.yaml | head -1 | sed -E 's/^version: *//; s/\+.*//')
           [ -n "$VERSION" ] || { echo "ERROR: no se encontró 'version:' en pubspec.yaml"; exit 1; }
           echo "name=$VERSION" >> "$GITHUB_OUTPUT"
 
