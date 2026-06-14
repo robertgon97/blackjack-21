@@ -11,7 +11,7 @@ import 'features/profile/presentation/profile_provider.dart';
 
 /// Messenger global para mostrar avisos (p. ej. logros) desde cualquier ruta,
 /// sin depender del `Scaffold` de la pantalla actual.
-final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 /// Raíz de la aplicación Blackjack 21.
 ///
@@ -57,7 +57,7 @@ class BlackjackApp extends ConsumerWidget {
       for (final id in ahora.where((id) => !previos.contains(id))) {
         final logro = logroPorId(id);
         if (logro == null) continue;
-        scaffoldMessengerKey.currentState?.showSnackBar(
+        _scaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(
             content:
                 Text('${logro.emoji}  ¡Logro desbloqueado: ${logro.nombre}!'),
@@ -69,7 +69,7 @@ class BlackjackApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Blackjack 21',
-      scaffoldMessengerKey: scaffoldMessengerKey,
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: construirTema(tema),
       routerConfig: router,

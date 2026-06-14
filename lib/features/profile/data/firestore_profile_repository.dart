@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../domain/estadisticas.dart';
 import '../domain/i_profile_repository.dart';
 
-/// Implementación de [IProfileRepository] leyendo `users/{uid}.stats` de
-/// Firestore. Las stats las escribe la Cloud Function `playerAction`; aquí solo
-/// se leen (el cliente no puede tocarlas, ver `firestore.rules`).
+/// Implementación de [IProfileRepository] leyendo `users/{uid}` de Firestore.
+/// Las `stats` y `logros` los escribe la Cloud Function `playerAction`; aquí solo
+/// se leen (el cliente no puede tocarlos, ver `firestore.rules`).
 class FirestoreProfileRepository implements IProfileRepository {
   FirestoreProfileRepository({FirebaseFirestore? db})
       : _db = db ?? FirebaseFirestore.instance;
@@ -13,18 +12,9 @@ class FirestoreProfileRepository implements IProfileRepository {
   final FirebaseFirestore _db;
 
   @override
-  Stream<Estadisticas> estadisticasStream(String uid) {
-    return _db.collection('users').doc(uid).snapshots().map((doc) {
-      final stats = doc.data()?['stats'] as Map<String, dynamic>?;
-      return Estadisticas.fromMap(stats);
-    });
-  }
-
-  @override
-  Stream<List<String>> logrosStream(String uid) {
-    return _db.collection('users').doc(uid).snapshots().map((doc) {
-      final logros = doc.data()?['logros'] as List<dynamic>?;
-      return logros?.cast<String>() ?? const <String>[];
-    });
+  Stream<Map<String, dynamic>> usuarioDocStream(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map(
+          (doc) => doc.data() ?? const <String, dynamic>{},
+        );
   }
 }

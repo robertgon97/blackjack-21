@@ -9,16 +9,28 @@ final profileRepositoryProvider = Provider<IProfileRepository>(
   (_) => FirestoreProfileRepository(),
 );
 
-/// Estadísticas de juego en tiempo real del usuario autenticado.
-final estadisticasProvider = StreamProvider<Estadisticas>((ref) {
+/// Documento `users/{uid}` del usuario autenticado en tiempo real. Es la **fuente
+/// única** del listener: `estadisticasProvider` y `logrosProvider` derivan de
+/// aquí para no abrir dos suscripciones Firestore al mismo documento.
+final usuarioDocProvider = StreamProvider<Map<String, dynamic>>((ref) {
   final perfil = ref.watch(perfilStreamProvider).valueOrNull;
   if (perfil == null) return const Stream.empty();
-  return ref.watch(profileRepositoryProvider).estadisticasStream(perfil.uid);
+  return ref.watch(profileRepositoryProvider).usuarioDocStream(perfil.uid);
 });
 
-/// IDs de logros desbloqueados en tiempo real del usuario autenticado (Fase 9).
-final logrosProvider = StreamProvider<List<String>>((ref) {
-  final perfil = ref.watch(perfilStreamProvider).valueOrNull;
-  if (perfil == null) return const Stream.empty();
-  return ref.watch(profileRepositoryProvider).logrosStream(perfil.uid);
+/// Estadísticas de juego del usuario autenticado, derivadas del doc compartido.
+final estadisticasProvider = Provider<AsyncValue<Estadisticas>>((ref) {
+  return ref.watch(usuarioDocProvider).whenData(
+        (data) => Estadisticas.fromMap(data['stats'] as Map<String, dynamic>?),
+      );
+});
+
+/// IDs de logros desbloqueados del usuario autenticado (Fase 9), derivados del
+/// doc compartido.
+final logrosProvider = Provider<AsyncValue<List<String>>>((ref) {
+  return ref.watch(usuarioDocProvider).whenData(
+        (data) =>
+            (data['logros'] as List<dynamic>?)?.cast<String>() ??
+            const <String>[],
+      );
 });

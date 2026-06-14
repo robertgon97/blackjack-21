@@ -54,9 +54,9 @@ class PerfilPage extends ConsumerWidget {
             children: [
               _Cabecera(perfil: perfil),
               const SizedBox(height: 20),
-              _TarjetaNivel(),
+              const _TarjetaNivel(),
               const SizedBox(height: 20),
-              _TarjetaSaldo(),
+              const _TarjetaSaldo(),
               const SizedBox(height: 20),
               Text(
                 'Estadísticas',
@@ -77,7 +77,7 @@ class PerfilPage extends ConsumerWidget {
               const SizedBox(height: 20),
               Text('Logros', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              _GaleriaLogros(),
+              const _GaleriaLogros(),
               if (perfil.isAnonymous) ...[
                 const SizedBox(height: 20),
                 _AvisoAnonimo(),
@@ -253,6 +253,8 @@ class _DialogoEditarState extends State<_DialogoEditar> {
 
 /// Tarjeta de saldo con acceso al historial de movimientos.
 class _TarjetaSaldo extends ConsumerWidget {
+  const _TarjetaSaldo();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saldo = ref.watch(saldoProvider).valueOrNull ?? 0;
@@ -273,6 +275,8 @@ class _TarjetaSaldo extends ConsumerWidget {
 
 /// Tarjeta de nivel: nombre del nivel, XP y barra de progreso al siguiente.
 class _TarjetaNivel extends ConsumerWidget {
+  const _TarjetaNivel();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(estadisticasProvider).valueOrNull;
@@ -320,6 +324,8 @@ class _TarjetaNivel extends ConsumerWidget {
 /// Galería de logros: todos los del catálogo, los desbloqueados a color y los
 /// pendientes en gris.
 class _GaleriaLogros extends ConsumerWidget {
+  const _GaleriaLogros();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final desbloqueados =
