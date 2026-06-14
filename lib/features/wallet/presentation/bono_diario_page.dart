@@ -28,7 +28,10 @@ class _BonoDiarioPageState extends ConsumerState<BonoDiarioPage> {
           await ref.read(walletRepositoryProvider).reclamarBonoDiario();
       messenger.showSnackBar(
         SnackBar(
-          content: Text('¡+${dinero(bono.monto)}! Racha: ${bono.racha} días'),
+          content: Text(
+            '¡+${dinero(bono.monto)}! Racha: ${bono.racha} '
+            '${bono.racha == 1 ? "día" : "días"}',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
