@@ -45,6 +45,12 @@ updates:
     open-pull-requests-limit: 5
     assignees:
       - "robertgon97"
+    # Consolida todas las actions en un solo PR por ciclo (evita uno por cada
+    # action: checkout, cache, flutter-action, action-hosting-deploy, etc.).
+    groups:
+      acciones-ci:
+        patterns:
+          - "*"
     commit-message:
       prefix: "chore(ci)"
     labels:

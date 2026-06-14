@@ -8,6 +8,9 @@ Solo recibe correcciones de seguridad la última versión publicada en la rama `
 (la que se despliega a producción: Web en GitHub Pages, APK/AAB de las releases y las
 Cloud Functions). Las versiones anteriores no reciben parches.
 
+El directorio `legacy-web/` (el juego JS original, archivado) **está fuera del ámbito**:
+es código histórico que no se mantiene ni se despliega, por lo que no recibe parches.
+
 | Versión            | ¿Recibe parches de seguridad? |
 | ------------------ | :---------------------------: |
 | Última en `main`   |              ✅               |
