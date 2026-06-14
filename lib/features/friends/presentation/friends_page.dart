@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/avatar.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/contacto.dart';
 import '../domain/resultado_busqueda.dart';
@@ -182,10 +183,7 @@ class _TarjetaAmigo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Text(
-          contacto.avatar,
-          style: const TextStyle(fontSize: 30),
-        ),
+        leading: Avatar(contacto.avatar, tamano: 30),
         title: Text(contacto.displayName),
         trailing: FilledButton.tonal(
           onPressed: onTransferir,
@@ -325,10 +323,7 @@ class _TarjetaSolicitudRecibida extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Text(
-          contacto.avatar,
-          style: const TextStyle(fontSize: 30),
-        ),
+        leading: Avatar(contacto.avatar, tamano: 30),
         title: Text(contacto.displayName),
         subtitle: const Text('Quiere ser tu amigo'),
         trailing: Row(
@@ -366,10 +361,7 @@ class _TarjetaSolicitudEnviada extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Text(
-          contacto.avatar,
-          style: const TextStyle(fontSize: 30),
-        ),
+        leading: Avatar(contacto.avatar, tamano: 30),
         title: Text(contacto.displayName),
         subtitle: const Text('Solicitud enviada'),
         trailing: TextButton(
@@ -574,10 +566,7 @@ class _ResultadoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Text(
-          resultado.avatar,
-          style: const TextStyle(fontSize: 28),
-        ),
+        leading: Avatar(resultado.avatar, tamano: 28),
         title: Text(resultado.displayName),
         subtitle: const Text('¿Enviar solicitud de amistad?'),
       ),

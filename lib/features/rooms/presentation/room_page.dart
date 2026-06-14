@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/temas.dart';
 import '../../../core/utils/formato.dart';
+import '../../../core/widgets/avatar.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../domain/modelos.dart';
 import 'sala_provider.dart';
@@ -359,7 +360,7 @@ class _FilaJugador extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Text(jugador.avatar, style: const TextStyle(fontSize: 28)),
+      leading: Avatar(jugador.avatar, tamano: 28),
       title: Text(
         jugador.displayName,
         style: const TextStyle(color: Colors.white),
@@ -453,7 +454,7 @@ class _FilaApuesta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Text(jugador.avatar, style: const TextStyle(fontSize: 26)),
+      leading: Avatar(jugador.avatar, tamano: 26),
       title: Text(
         jugador.displayName,
         style: const TextStyle(color: Colors.white),
@@ -632,10 +633,7 @@ class _TablaResultados extends StatelessWidget {
           _ => (Colors.white54, '—'),
         };
         return ListTile(
-          leading: Text(
-            jugador?.avatar ?? '🃏',
-            style: const TextStyle(fontSize: 26),
-          ),
+          leading: Avatar(jugador?.avatar ?? '🃏', tamano: 26),
           title: Text(
             jugador?.displayName ?? e.key,
             style: const TextStyle(color: Colors.white),

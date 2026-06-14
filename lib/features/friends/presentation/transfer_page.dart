@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/avatar.dart';
 import '../../wallet/presentation/wallet_provider.dart';
 import '../domain/contacto.dart';
 import 'friends_provider.dart';
@@ -162,10 +163,7 @@ class _TarjetaDestinatario extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Text(
-          contacto.avatar,
-          style: const TextStyle(fontSize: 36),
-        ),
+        leading: Avatar(contacto.avatar, tamano: 36),
         title: Text(contacto.displayName),
         subtitle: const Text('Destinatario'),
       ),

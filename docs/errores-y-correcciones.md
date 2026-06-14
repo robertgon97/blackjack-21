@@ -373,3 +373,25 @@ lo requerían; una scheduled sí crea un job de Cloud Scheduler.
 **Aprendizaje:** antes de añadir una scheduled function (u otro tipo de trigger nuevo: Eventarc,
 Pub/Sub…), confirmar que el SA del CI tiene los roles IAM correspondientes. El despliegue habilita las
 APIs automáticamente, pero **no** concede los permisos IAM del SA.
+
+---
+
+## 2026-06-14 — Avatar de Google como URL y error al editar perfil (regresión Fase 8)
+
+**Qué falló:** (1) el avatar se renderizaba con `Text(perfil.avatar)` en toda la UI; si la cuenta entró
+con Google, `avatar` es la URL de la foto (`user.photoURL`), así que se mostraba la **URL literal como
+texto**. (2) `actualizarPerfil` llamaba a `user.updatePhotoURL(avatar)` con un **emoji**, que Firebase
+Auth rechaza (no es una URL válida) → al editar el perfil saltaba un error de Firebase.
+
+**Causa:** en la Fase 8 (perfil) se asumió que el avatar siempre era un emoji y se usó `updatePhotoURL`
+como mecanismo para forzar el re-emit de `perfilStream`. Ambas suposiciones eran falsas para cuentas con
+foto de Google.
+
+**Corrección:** (1) widget `core/widgets/avatar.dart` (`Avatar` + `avatarEsUrl`) que pinta una imagen si
+es URL o el emoji si no; reemplazados todos los `Text(...avatar)` (perfil, drawer, salas, amigos). (2)
+`actualizarPerfil` ya no toca el perfil de Auth: solo escribe Firestore, y la UI fuerza el refresco con
+`ref.invalidate(perfilStreamProvider)` tras editar.
+
+**Aprendizaje:** el avatar es una unión **emoji | URL**; tratarlo siempre como emoji rompe el render y la
+edición. Para refrescar un stream basado en `userChanges()` tras escribir Firestore, usar
+`ref.invalidate`, no `updateProfile` (que además valida el formato de `photoURL`).

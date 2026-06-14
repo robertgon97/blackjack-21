@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/avatar.dart';
 import '../../../game/domain/cartas.dart';
 import '../../../game/domain/modelos.dart';
 import '../../../game/presentation/widgets/carta_widget.dart';
@@ -115,7 +116,7 @@ class _ZonaOtroJugador extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(avatar, style: const TextStyle(fontSize: 20)),
+          Avatar(avatar, tamano: 20),
           Text(
             nombre,
             style: const TextStyle(color: Colors.white70, fontSize: 11),
