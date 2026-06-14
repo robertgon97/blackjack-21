@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/formato.dart';
+import '../../../core/widgets/avatar.dart';
 import '../../auth/domain/perfil_usuario.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../wallet/presentation/wallet_provider.dart';
@@ -105,7 +106,11 @@ class _Cabecera extends ConsumerWidget {
         CircleAvatar(
           radius: 44,
           backgroundColor: theme.colorScheme.primaryContainer,
-          child: Text(perfil.avatar, style: const TextStyle(fontSize: 44)),
+          backgroundImage:
+              avatarEsUrl(perfil.avatar) ? NetworkImage(perfil.avatar) : null,
+          child: avatarEsUrl(perfil.avatar)
+              ? null
+              : Text(perfil.avatar, style: const TextStyle(fontSize: 44)),
         ),
         const SizedBox(height: 12),
         Row(
@@ -167,6 +172,9 @@ class _Cabecera extends ConsumerWidget {
             displayName: resultado.nombre,
             avatar: resultado.avatar,
           );
+      // `perfilStream` se basa en `userChanges()` de Auth y no reacciona a la
+      // escritura en Firestore; invalidarlo lo recrea y relee el doc actualizado.
+      ref.invalidate(perfilStreamProvider);
       messenger.showSnackBar(
         const SnackBar(content: Text('Perfil actualizado')),
       );

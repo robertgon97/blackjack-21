@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/tema_provider.dart';
 import '../../../../core/theme/temas.dart';
 import '../../../../core/utils/formato.dart';
+import '../../../../core/widgets/avatar.dart';
 import '../../../auth/presentation/auth_provider.dart';
 import '../../../wallet/presentation/wallet_provider.dart';
 import '../controlador_juego.dart';
@@ -26,6 +27,7 @@ class MenuDrawer extends ConsumerWidget {
     final perfil = ref.watch(perfilStreamProvider).valueOrNull;
     final saldo = ref.watch(saldoProvider).valueOrNull ?? perfil?.balance ?? 0;
     final temaActual = ref.watch(temaProvider);
+    final avatar = perfil?.avatar ?? '🃏';
 
     return Drawer(
       child: ListView(
@@ -35,10 +37,11 @@ class MenuDrawer extends ConsumerWidget {
             accountName: Text(perfil?.displayName ?? 'Jugador'),
             accountEmail: Text('Saldo: ${dinero(saldo)}'),
             currentAccountPicture: CircleAvatar(
-              child: Text(
-                perfil?.avatar ?? '🃏',
-                style: const TextStyle(fontSize: 28),
-              ),
+              backgroundImage:
+                  avatarEsUrl(avatar) ? NetworkImage(avatar) : null,
+              child: avatarEsUrl(avatar)
+                  ? null
+                  : Text(avatar, style: const TextStyle(fontSize: 28)),
             ),
           ),
           _item(context, Icons.account_circle, 'Mi perfil', '/perfil'),

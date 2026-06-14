@@ -247,21 +247,13 @@ class FirebaseAuthRepository implements IAuthRepository {
     if (cambios.isEmpty) return;
 
     // Fuente de verdad del perfil: el doc de Firestore.
+    //
+    // NO se reflejan los cambios en el perfil de Auth (updateDisplayName/
+    // updatePhotoURL): `updatePhotoURL` rechaza un emoji por no ser una URL
+    // válida y hacía fallar la edición (issue #66). El refresco del
+    // `perfilStream` lo fuerza la presentación con `ref.invalidate` tras esta
+    // llamada (el doc ya quedó actualizado).
     await _db.collection('users').doc(user.uid).update(cambios);
-
-    // `perfilStream` se basa en `userChanges()` de Auth, que NO se dispara al
-    // escribir en Firestore. Reflejar los cambios en el perfil de Auth fuerza
-    // un `userChanges()` → el stream reemite y relee el doc ya actualizado.
-    // Es un efecto secundario, no la operación crítica: si falla (red, token),
-    // Firestore ya tiene el dato correcto y el stream se actualizará en la
-    // próxima sesión. Propagar el error mostraría «no se pudo actualizar» pese
-    // a que el cambio SÍ se guardó.
-    try {
-      if (displayName != null) await user.updateDisplayName(displayName);
-      if (avatar != null) await user.updatePhotoURL(avatar);
-    } catch (e) {
-      debugPrint('actualizarPerfil: no se pudo reflejar en Auth: $e');
-    }
   }
 
   @override
