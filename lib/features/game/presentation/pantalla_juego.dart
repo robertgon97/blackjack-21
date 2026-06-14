@@ -17,6 +17,7 @@ import 'controlador_juego.dart';
 import 'estado_juego.dart';
 import 'widgets/barra_estado.dart';
 import 'widgets/botones_accion.dart';
+import 'widgets/menu_drawer.dart';
 import 'widgets/mano_jugador_widget.dart';
 import 'widgets/panel_apuestas.dart';
 import 'widgets/zona_crupier_widget.dart';
@@ -48,6 +49,7 @@ class PantallaJuego extends ConsumerWidget {
     );
 
     return Scaffold(
+      drawer: const MenuDrawer(),
       body: Container(
         decoration: BoxDecoration(
           gradient: RadialGradient(

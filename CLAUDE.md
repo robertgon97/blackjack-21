@@ -163,6 +163,10 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 5. **Linter `require_trailing_commas`:** en listas/params de más de una línea, coma final siempre.
 6. **Comunicación en sala:** la interfaz `ServicioComunicacion` está en `comms/domain/`. Para
    cambiar de LiveKit a otro proveedor, crear nueva clase en `comms/data/`; la UI no cambia.
+7. **Navegación principal (issue #67):** la `BarraEstado` del juego solo muestra datos (banca, en juego,
+   conteo) + el botón ☰. El acceso a perfil/misiones/bono/ranking/multijugador/amigos, el tema y las
+   reglas de la mesa viven en `MenuDrawer` (`game/presentation/widgets/menu_drawer.dart`), el `drawer`
+   del `Scaffold` de `PantallaJuego`. Al añadir una sección nueva, enchúfala ahí (no en la barra).
 
 ## Pendiente (fases futuras)
 
