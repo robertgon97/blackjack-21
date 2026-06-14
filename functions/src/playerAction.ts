@@ -2,7 +2,10 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import {
   Carta,
+  EstadisticasJugador,
   Mano,
+  ResultadoMano,
+  acumularStats,
   calcularPuntos,
   debePedirCrupier,
   resolverMano,
@@ -245,12 +248,17 @@ export const playerAction = onCall(
 
       // Calcular resultados.
       const prioridad = ['blackjack', 'win', 'push', 'surrender', 'lose'];
-      const balanceUpdates: Array<{ uid: string; delta: number; description: string }> = [];
+      const balanceUpdates: Array<{
+        uid: string;
+        delta: number;
+        description: string;
+        stats: EstadisticasJugador;
+      }> = [];
 
       for (const [pUid, pData] of Object.entries(updatedPlayers)) {
         const esUnica = pData.manos.length === 1;
         let deltaTotal = 0;
-        const resultados: string[] = [];
+        const resultados: ResultadoMano[] = [];
 
         for (const manoItem of pData.manos) {
           const { result, delta } = resolverMano(manoItem, dealerCards, esUnica, config);
@@ -263,10 +271,24 @@ export const playerAction = onCall(
         )[0];
 
         updatedPlayers[pUid] = { ...pData, done: true, result: mainResult };
+
+        // Estadísticas server-side (anti-trampa): se acumulan a partir de las
+        // que ya tiene el usuario en Firestore (leídas en la fase de reads).
+        const statsPrevias =
+          userDataMap[pUid]?.['stats'] as Partial<EstadisticasJugador> | undefined;
+        const nuevasStats = acumularStats(
+          statsPrevias,
+          pData.manos,
+          resultados,
+          mainResult,
+          deltaTotal,
+        );
+
         balanceUpdates.push({
           uid: pUid,
           delta: deltaTotal,
           description: `Ronda ${(room.round as number) || 1}: ${mainResult}`,
+          stats: nuevasStats,
         });
       }
 
@@ -284,12 +306,12 @@ export const playerAction = onCall(
       // valide el saldo al día (si no, quedaría el de cuando el jugador se unió).
       const roomUpdate: Record<string, unknown> = { status: 'finished' };
 
-      for (const { uid: pUid, delta, description } of balanceUpdates) {
+      for (const { uid: pUid, delta, description, stats } of balanceUpdates) {
         const currentBalance = (userDataMap[pUid]?.['balance'] as number) || 0;
         const newBalance = Math.max(0, currentBalance + delta);
         const userRef = db.collection('users').doc(pUid);
 
-        tx.update(userRef, { balance: newBalance });
+        tx.update(userRef, { balance: newBalance, stats });
         tx.set(userRef.collection('transactions').doc(), {
           type: delta >= 0 ? 'win' : 'loss',
           amount: Math.abs(delta),

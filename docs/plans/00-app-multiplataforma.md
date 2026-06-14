@@ -76,9 +76,9 @@ opcional para ver reacciones).
 | 3.5 | Conversión de cuenta anónima → permanente (account linking + bono) | ✅ |
 | 4 | Social: amigos y transferencias | ✅ |
 | 5 | Salas multijugador en tiempo real | ✅ |
-| 6 | Observabilidad base: Crashlytics + Analytics (full) | ⬜ |
-| 7 | Endurecimiento del backend: App Check | ⬜ |
-| 8 | Perfil + estadísticas de juego (server-side) | ⬜ |
+| 6 | Observabilidad base: Crashlytics + Analytics (full) | ✅ |
+| 7 | Endurecimiento del backend: App Check (modo monitor) | ✅ |
+| 8 | Perfil + estadísticas de juego (server-side) | ✅ |
 | 9 | Progresión: niveles/XP + logros (migra `stats.js`) | ⬜ |
 | 10 | Leaderboards semanales + top de amigos + bono diario + misiones | ⬜ |
 | 11 | Monetización y pulido (anuncios, PWA, push) | ⬜ |

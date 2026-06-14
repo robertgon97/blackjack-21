@@ -14,3 +14,7 @@ String dineroConSigno(int monto) {
   if (monto < 0) return '-\$${monto.abs()}';
   return '\$0';
 }
+
+/// Formatea una fecha como `15/6/2024` (día/mes/año), sin hora. Para etiquetas
+/// tipo "miembro desde".
+String fechaCorta(DateTime d) => '${d.day}/${d.month}/${d.year}';

@@ -31,10 +31,11 @@ service cloud.firestore {
     }
 
     // ¿La escritura mantiene intactos los campos que solo las Functions pueden tocar?
+    // `stats` (Fase 8) lo escribe playerAction server-side: el cliente nunca lo toca.
     function noTocaCamposProtegidos() {
       return request.resource.data.balance == resource.data.balance &&
         request.resource.data.lastAdReward == resource.data.lastAdReward &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['conversionBonusGranted', 'isAnonymous', 'lastDailyBonus']);
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['conversionBonusGranted', 'isAnonymous', 'lastDailyBonus', 'stats']);
     }
 
     // ---------- users ----------

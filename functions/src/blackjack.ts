@@ -76,6 +76,9 @@ export function debePedirCrupier(cartas: Carta[], h17: boolean): boolean {
   return false;
 }
 
+/** Posibles resultados de una mano resuelta. */
+export type ResultadoMano = 'blackjack' | 'win' | 'push' | 'surrender' | 'lose';
+
 /**
  * Resuelve una mano del jugador contra la del crupier.
  * Devuelve el `result` (win/lose/push/blackjack/surrender) y el `delta` neto
@@ -86,7 +89,7 @@ export function resolverMano(
   dealerCards: Carta[],
   esUnica: boolean,
   config: Record<string, unknown>,
-): { result: string; delta: number } {
+): { result: ResultadoMano; delta: number } {
   const pagoBlackjack = (config['pagoBlackjack'] as number) || 1.5;
   const empujeEn22 = (config['empujeEn22'] as boolean) || false;
   const jugPuntos = calcularPuntos(mano.cartas);
@@ -125,4 +128,107 @@ export function resolverMano(
   if (jugPuntos > crupPuntos) return { result: 'win', delta: mano.apuesta };
   if (jugPuntos < crupPuntos) return { result: 'lose', delta: -mano.apuesta };
   return { result: 'push', delta: 0 };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Estadísticas de juego (Fase 8). Se escriben server-side en users/{uid}.stats
+// (anti-trampa) dentro de la misma transacción que resuelve la ronda. Solo el
+// multijugador alimenta estas stats; el modo solo es client-side y no cuenta.
+//
+// Espejo del modelo Dart en lib/features/profile/domain/estadisticas.dart.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface EstadisticasJugador {
+  /** Manos jugadas en total (cada mano de un split cuenta por separado). */
+  manosJugadas: number;
+  /** Manos ganadas (incluye los blackjacks). */
+  ganadas: number;
+  perdidas: number;
+  empates: number;
+  blackjacks: number;
+  /** Mayor ganancia neta en una sola ronda. */
+  mayorGanancia: number;
+  /** Rachas calculadas por RONDA, no por mano. */
+  rachaActual: number;
+  mejorRacha: number;
+  totalApostado: number;
+  totalGanado: number;
+}
+
+/** Estadísticas en cero (usuario sin partidas). */
+export function statsVacias(): EstadisticasJugador {
+  return {
+    manosJugadas: 0,
+    ganadas: 0,
+    perdidas: 0,
+    empates: 0,
+    blackjacks: 0,
+    mayorGanancia: 0,
+    rachaActual: 0,
+    mejorRacha: 0,
+    totalApostado: 0,
+    totalGanado: 0,
+  };
+}
+
+/**
+ * Acumula el resultado de una ronda sobre las estadísticas previas del jugador.
+ * Función pura (sin Firestore) para poder razonarla y testearla aislada.
+ *
+ * - `manos` y `resultados` son paralelos (un resultado por mano del jugador).
+ * - `mainResult` es el resultado representativo de la ronda (ya priorizado).
+ * - `deltaTotal` es la ganancia/pérdida neta de la ronda (suma de los deltas).
+ *
+ * La racha se calcula por ronda: win/blackjack la incrementa, push la mantiene,
+ * y lose/surrender la reinicia a cero.
+ */
+export function acumularStats(
+  prev: Partial<EstadisticasJugador> | undefined,
+  manos: Mano[],
+  resultados: ResultadoMano[],
+  mainResult: ResultadoMano,
+  deltaTotal: number,
+): EstadisticasJugador {
+  const base: EstadisticasJugador = { ...statsVacias(), ...(prev ?? {}) };
+
+  let ganadas = 0;
+  let perdidas = 0;
+  let empates = 0;
+  let blackjacks = 0;
+  for (const r of resultados) {
+    if (r === 'blackjack') {
+      blackjacks++;
+      ganadas++;
+    } else if (r === 'win') {
+      ganadas++;
+    } else if (r === 'push') {
+      empates++;
+    } else {
+      // 'lose' | 'surrender'
+      perdidas++;
+    }
+  }
+
+  let rachaActual = base.rachaActual;
+  if (mainResult === 'win' || mainResult === 'blackjack') {
+    rachaActual += 1;
+  } else if (mainResult !== 'push') {
+    rachaActual = 0;
+  }
+
+  const apostadoRonda = manos.reduce((acc, m) => acc + m.apuesta, 0);
+  const ganadoRonda = deltaTotal > 0 ? deltaTotal : 0;
+
+  return {
+    manosJugadas: base.manosJugadas + manos.length,
+    ganadas: base.ganadas + ganadas,
+    perdidas: base.perdidas + perdidas,
+    empates: base.empates + empates,
+    blackjacks: base.blackjacks + blackjacks,
+    mayorGanancia: Math.max(base.mayorGanancia, deltaTotal),
+    rachaActual,
+    mejorRacha: Math.max(base.mejorRacha, rachaActual),
+    totalApostado: base.totalApostado + apostadoRonda,
+    totalGanado: base.totalGanado + ganadoRonda,
+  };
 }

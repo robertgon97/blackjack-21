@@ -237,6 +237,26 @@ class FirebaseAuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<void> actualizarPerfil({String? displayName, String? avatar}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No hay sesión activa.');
+
+    final cambios = <String, Object?>{};
+    if (displayName != null) cambios['displayName'] = displayName;
+    if (avatar != null) cambios['avatar'] = avatar;
+    if (cambios.isEmpty) return;
+
+    // Fuente de verdad del perfil: el doc de Firestore.
+    await _db.collection('users').doc(user.uid).update(cambios);
+
+    // `perfilStream` se basa en `userChanges()` de Auth, que NO se dispara al
+    // escribir en Firestore. Reflejar los cambios en el perfil de Auth fuerza
+    // un `userChanges()` → el stream reemite y relee el doc ya actualizado.
+    if (displayName != null) await user.updateDisplayName(displayName);
+    if (avatar != null) await user.updatePhotoURL(avatar);
+  }
+
+  @override
   Future<void> salir() async {
     // El signOut de Google no debe impedir cerrar la sesión de Firebase.
     try {
@@ -383,6 +403,7 @@ class FirebaseAuthRepository implements IAuthRepository {
       // isAnonymous: true durante la ventana post-link / pre-Function y el banner
       // de conversión reaparecería brevemente.
       isAnonymous: user.isAnonymous,
+      creadoEn: (d['createdAt'] as Timestamp?)?.toDate(),
     );
   }
 

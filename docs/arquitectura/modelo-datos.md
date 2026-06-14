@@ -16,8 +16,8 @@ El documento de perfil de cada usuario. El `uid` es el de Firebase Auth.
 | `inviteCode` | string | Código único para invitar (ej. `ROB-X4K2`) |
 | `isAnonymous` | bool | `true` si es cuenta demo sin registrar |
 | `conversionBonusGranted` | bool | 🔒 `true` tras dar el bono de conversión demo → cuenta real (idempotencia) |
-| `stats` | map | `{ jugadas, ganadas, perdidas, blackjacks, rachaMaxima, mayorBanca }` |
-| `nivel` | string | Nivel actual (derivado de `mayorBanca`) |
+| `stats` | map | 🔒 Estadísticas de juego (Fase 8). Solo `playerAction` las escribe: `{ manosJugadas, ganadas, perdidas, empates, blackjacks, mayorGanancia, rachaActual, mejorRacha, totalApostado, totalGanado }`. Solo el multijugador las alimenta |
+| `nivel` | int | (Fase 9) Nivel actual, derivado de la XP |
 | `lastAdReward` | timestamp | 🔒 Última vez que cobró un anuncio (throttle) |
 | `createdAt` | timestamp | Fecha de creación |
 | `lastSeen` | timestamp | Última actividad (presencia) |
