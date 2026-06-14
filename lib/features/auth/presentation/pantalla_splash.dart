@@ -17,10 +17,9 @@ class PantallaSplash extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '🃏',
-              style: TextStyle(fontSize: 72, color: colores.primary),
-            ),
+            // Los emojis los renderiza el motor del SO, no Flutter: aplicar
+            // `color` aquí no tendría efecto, así que solo se fija el tamaño.
+            const Text('🃏', style: TextStyle(fontSize: 72)),
             const SizedBox(height: 24),
             Text(
               'Blackjack 21',

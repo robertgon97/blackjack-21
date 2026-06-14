@@ -97,7 +97,11 @@ class FirebaseAuthRepository implements IAuthRepository {
       // vuelva a emitir con red.
       try {
         return await _fetchPerfil(user);
-      } catch (e) {
+      } catch (e, stack) {
+        // No fatal: la sesión sigue válida. Se registra en Crashlytics (con la
+        // traza real) porque `debugPrint` se omite en release y este fallo deja
+        // al usuario sin saldo/perfil hasta la próxima emisión.
+        await _telemetria.registrarError(e, stack);
         debugPrint('perfilStream: lectura de perfil falló, perfil mínimo: $e');
         return _perfilMinimo(user);
       }
