@@ -76,6 +76,19 @@ export const resolveSoloRound = onCall(
       typeof data.seguro === 'number' && data.seguro > 0
         ? Math.floor(data.seguro)
         : 0;
+
+    // El seguro NUNCA puede superar la mitad de lo apostado. Sin este tope, un
+    // cliente modificado enviaría un seguro enorme (p. ej. apuesta=1, seguro=99)
+    // y, como el seguro paga 2:1 con crupier-blackjack, duplicaría su saldo: el
+    // pago superaría las apuestas perdidas. La UI legítima fija
+    // seguro = apuesta_inicial ~/ 2, siempre ≤ la mitad del total apostado.
+    const totalApostado = manos.reduce((s, m) => s + m.apuesta, 0);
+    if (seguro > Math.floor(totalApostado / 2)) {
+      throw new HttpsError(
+        'failed-precondition',
+        'El seguro supera el máximo permitido (la mitad de la apuesta).',
+      );
+    }
     const configIn = (data.config ?? {}) as Record<string, unknown>;
     const config: Record<string, unknown> = {
       pagoBlackjack:
@@ -117,8 +130,7 @@ export const resolveSoloRound = onCall(
       neto += crupierBlackjack ? seguro * 2 : -seguro;
     }
 
-    const comprometido =
-      manos.reduce((s, m) => s + m.apuesta, 0) + seguro;
+    const comprometido = totalApostado + seguro;
 
     const db = getFirestore();
     const userRef = db.collection('users').doc(uid);
