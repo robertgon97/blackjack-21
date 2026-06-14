@@ -116,7 +116,7 @@ lib/
 ## Tests
 
 ```bash
-flutter test                           # corre los 49 tests de domain
+flutter test                           # corre los 62 tests de domain
 flutter test --reporter=expanded       # con detalle de cada test
 ```
 
@@ -173,8 +173,8 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > - [#56](https://github.com/robertgon97/blackjack-21/issues/56) — Migrar modelos a `freezed` + `json_serializable`.
 > - [#57](https://github.com/robertgon97/blackjack-21/issues/57) — Providers de Riverpod + ficha de feature de `comms`.
 
-- **Fase 9 (siguiente):** progresión (niveles/XP + logros, migra `stats.js`). Hoja de ruta en
-  [`docs/plans/02-perfil-progresion-y-leaderboards.md`](docs/plans/02-perfil-progresion-y-leaderboards.md).
+- **Fase 10 (siguiente):** leaderboards semanales + top de amigos + bono diario + misiones. Hoja de ruta
+  en [`docs/plans/02-perfil-progresion-y-leaderboards.md`](docs/plans/02-perfil-progresion-y-leaderboards.md).
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
@@ -226,5 +226,13 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > cliente solo las lee (`firestore.rules` protege `stats`). **Solo el multijugador** alimenta las stats.
 > Accesos desde `BarraEstado` y `PanelAjustes`. Ficha: [`docs/features/perfil.md`](docs/features/perfil.md).
 >
-> **Siguiente — Fases 9–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
-> (progresión/leaderboards, monetización, comunicación…).
+> **Hecho en Fase 9:** progresión en `features/profile/` — **XP + niveles** (derivados de la XP, escala
+> migrada de `stats.js`: `profile/domain/niveles.dart`) y **logros** desbloqueables
+> (`profile/domain/logros.dart`). La Function `playerAction` otorga XP (`xpDeRonda`) y evalúa logros
+> (`functions/src/logros.ts` → `arrayUnion` en `users/{uid}.logros`) server-side; el cliente solo lee
+> (`firestore.rules` protege `stats`+`logros`). UI: barra de nivel + galería de logros en `perfil_page`,
+> y **toast** al desbloquear vía `ref.listen(logrosProvider)` global en `app.dart` (con
+> `scaffoldMessengerKey`). Ficha: [`docs/features/progresion.md`](docs/features/progresion.md).
+>
+> **Siguiente — Fases 10–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
+> (leaderboards, monetización, comunicación…).

@@ -1,11 +1,12 @@
-import 'estadisticas.dart';
+import 'datos_usuario.dart';
 
 /// Contrato de lectura del perfil de juego. La capa data lo implementa sobre
 /// Firestore; presentación y domain solo conocen esta abstracción.
 abstract interface class IProfileRepository {
-  /// Stream en tiempo real de las estadísticas del usuario [uid].
+  /// Stream en tiempo real de los datos de progresión del usuario [uid]
+  /// (estadísticas + logros).
   ///
-  /// Emite [Estadisticas.vacias] mientras el usuario no tenga el sub-mapa
-  /// `stats` (cuentas anteriores a la Fase 8 o sin partidas multijugador).
-  Stream<Estadisticas> estadisticasStream(String uid);
+  /// Un solo listener del documento `users/{uid}` alimenta ambos, en vez de
+  /// abrir dos suscripciones al mismo documento.
+  Stream<DatosUsuario> datosStream(String uid);
 }

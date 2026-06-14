@@ -31,6 +31,7 @@ void main() {
         'mejorRacha': 4,
         'totalApostado': 1000,
         'totalGanado': 450,
+        'xp': 320,
       });
       expect(stats.manosJugadas, 10);
       expect(stats.ganadas, 6);
@@ -42,6 +43,11 @@ void main() {
       expect(stats.mejorRacha, 4);
       expect(stats.totalApostado, 1000);
       expect(stats.totalGanado, 450);
+      expect(stats.xp, 320);
+    });
+
+    test('xp ausente queda en 0', () {
+      expect(Estadisticas.fromMap(<String, dynamic>{'ganadas': 1}).xp, 0);
     });
 
     test('claves faltantes quedan en 0 sin lanzar', () {

@@ -16,6 +16,7 @@ class Estadisticas {
     this.mejorRacha = 0,
     this.totalApostado = 0,
     this.totalGanado = 0,
+    this.xp = 0,
   });
 
   /// Manos jugadas en total (cada mano de un split cuenta por separado).
@@ -48,6 +49,9 @@ class Estadisticas {
   /// Total de créditos ganados (suma de los deltas positivos de las rondas).
   final int totalGanado;
 
+  /// XP acumulada (Fase 9). El nivel se deriva de esta XP (ver `niveles.dart`).
+  final int xp;
+
   /// Estadísticas en cero (usuario que aún no ha jugado multijugador).
   static const Estadisticas vacias = Estadisticas();
 
@@ -75,6 +79,7 @@ class Estadisticas {
       mejorRacha: leer('mejorRacha'),
       totalApostado: leer('totalApostado'),
       totalGanado: leer('totalGanado'),
+      xp: leer('xp'),
     );
   }
 }

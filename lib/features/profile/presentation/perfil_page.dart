@@ -1,6 +1,6 @@
 // ============================================================
 //  Pantalla de perfil: cabecera editable, saldo, acceso al
-//  historial y estadísticas de juego (Fase 8).
+//  historial, estadísticas (Fase 8) y progresión: nivel + logros (Fase 9).
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -12,6 +12,8 @@ import '../../auth/domain/perfil_usuario.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../wallet/presentation/wallet_provider.dart';
 import '../domain/estadisticas.dart';
+import '../domain/logros.dart';
+import '../domain/niveles.dart';
 import 'profile_provider.dart';
 
 /// Emojis disponibles como avatar (el avatar se guarda como string).
@@ -52,7 +54,9 @@ class PerfilPage extends ConsumerWidget {
             children: [
               _Cabecera(perfil: perfil),
               const SizedBox(height: 20),
-              _TarjetaSaldo(),
+              const _TarjetaNivel(),
+              const SizedBox(height: 20),
+              const _TarjetaSaldo(),
               const SizedBox(height: 20),
               Text(
                 'Estadísticas',
@@ -70,6 +74,10 @@ class PerfilPage extends ConsumerWidget {
                     Text('No se pudieron cargar las estadísticas: $e'),
                 data: (stats) => _GrillaEstadisticas(stats: stats),
               ),
+              const SizedBox(height: 20),
+              Text('Logros', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              const _GaleriaLogros(),
               if (perfil.isAnonymous) ...[
                 const SizedBox(height: 20),
                 _AvisoAnonimo(),
@@ -245,6 +253,8 @@ class _DialogoEditarState extends State<_DialogoEditar> {
 
 /// Tarjeta de saldo con acceso al historial de movimientos.
 class _TarjetaSaldo extends ConsumerWidget {
+  const _TarjetaSaldo();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saldo = ref.watch(saldoProvider).valueOrNull ?? 0;
@@ -257,6 +267,130 @@ class _TarjetaSaldo extends ConsumerWidget {
           icon: const Icon(Icons.history),
           label: const Text('Historial'),
           onPressed: () => context.push('/historial'),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tarjeta de nivel: nombre del nivel, XP y barra de progreso al siguiente.
+class _TarjetaNivel extends ConsumerWidget {
+  const _TarjetaNivel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(estadisticasProvider).valueOrNull;
+    final progreso = progresoDeXp(stats?.xp ?? 0);
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Nivel ${progreso.nivel.indice + 1} · ${progreso.nivel.nombre}',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const Spacer(),
+                Text('${progreso.xp} XP', style: theme.textTheme.bodyMedium),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: progreso.fraccion,
+                minHeight: 10,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              progreso.esMaximo
+                  ? '¡Nivel máximo alcanzado!'
+                  : 'Faltan ${progreso.xpRestante} XP para ${progreso.siguiente!.nombre}',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Galería de logros: todos los del catálogo, los desbloqueados a color y los
+/// pendientes en gris.
+class _GaleriaLogros extends ConsumerWidget {
+  const _GaleriaLogros();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final desbloqueados =
+        ref.watch(logrosProvider).valueOrNull?.toSet() ?? const <String>{};
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.6,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      children: [
+        for (final logro in catalogoLogros)
+          _TarjetaLogro(
+            logro: logro,
+            desbloqueado: desbloqueados.contains(logro.id),
+          ),
+      ],
+    );
+  }
+}
+
+class _TarjetaLogro extends StatelessWidget {
+  const _TarjetaLogro({required this.logro, required this.desbloqueado});
+
+  final Logro logro;
+  final bool desbloqueado;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Opacity(
+      opacity: desbloqueado ? 1 : 0.4,
+      child: Card(
+        color: desbloqueado ? theme.colorScheme.secondaryContainer : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            children: [
+              Text(
+                desbloqueado ? logro.emoji : '🔒',
+                style: const TextStyle(fontSize: 24),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      logro.nombre,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      logro.descripcion,
+                      style: theme.textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
