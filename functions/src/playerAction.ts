@@ -11,6 +11,7 @@ import {
   resolverMano,
 } from './blackjack';
 import { evaluarLogros } from './logros';
+import { idSemanaIso } from './semana';
 
 interface DatosJugador {
   manos: Mano[];
@@ -92,6 +93,18 @@ export const playerAction = onCall(
       const userDocs = await Promise.all(userRefs.map((r) => tx.get(r)));
       const userDataMap = Object.fromEntries(
         playerUids.map((id, i) => [id, userDocs[i].data() ?? {}]),
+      );
+
+      // Leaderboard semanal (Fase 10): se lee la entrada del periodo actual de
+      // cada jugador en la fase de reads para poder acumular `gananciaNeta` y
+      // calcular el máximo de `mejorRacha` de la semana antes de escribir.
+      const periodoLb = idSemanaIso(new Date());
+      const lbCol = db.collection('leaderboards').doc(periodoLb).collection('entries');
+      const lbDocs = await Promise.all(
+        playerUids.map((id) => tx.get(lbCol.doc(id))),
+      );
+      const lbDataMap = Object.fromEntries(
+        playerUids.map((id, i) => [id, lbDocs[i].data() ?? {}]),
       );
 
       // ── FASE 2: LÓGICA PURA ────────────────────────────────────────────────
@@ -254,6 +267,7 @@ export const playerAction = onCall(
         delta: number;
         description: string;
         stats: EstadisticasJugador;
+        ganadasRonda: number;
       }> = [];
 
       for (const [pUid, pData] of Object.entries(updatedPlayers)) {
@@ -285,11 +299,16 @@ export const playerAction = onCall(
           deltaTotal,
         );
 
+        const ganadasRonda = resultados.filter(
+          (r) => r === 'win' || r === 'blackjack',
+        ).length;
+
         balanceUpdates.push({
           uid: pUid,
           delta: deltaTotal,
           description: `Ronda ${(room.round as number) || 1}: ${mainResult}`,
           stats: nuevasStats,
+          ganadasRonda,
         });
       }
 
@@ -307,7 +326,7 @@ export const playerAction = onCall(
       // valide el saldo al día (si no, quedaría el de cuando el jugador se unió).
       const roomUpdate: Record<string, unknown> = { status: 'finished' };
 
-      for (const { uid: pUid, delta, description, stats } of balanceUpdates) {
+      for (const { uid: pUid, delta, description, stats, ganadasRonda } of balanceUpdates) {
         const currentBalance = (userDataMap[pUid]?.['balance'] as number) || 0;
         const newBalance = Math.max(0, currentBalance + delta);
         const userRef = db.collection('users').doc(pUid);
@@ -325,6 +344,28 @@ export const playerAction = onCall(
         }
 
         tx.update(userRef, userUpdate);
+
+        // Leaderboard semanal (Fase 10): acumula la entrada del periodo actual.
+        // gananciaNeta y manosGanadas se suman; mejorRacha es el máximo de la
+        // racha actual alcanzada durante la semana (la racha vive en stats).
+        const lbPrev = lbDataMap[pUid];
+        const userData = userDataMap[pUid] ?? {};
+        tx.set(
+          lbCol.doc(pUid),
+          {
+            uid: pUid,
+            displayName: (userData['displayName'] as string) ?? 'Jugador',
+            avatar: (userData['avatar'] as string) ?? '🃏',
+            gananciaNeta: ((lbPrev['gananciaNeta'] as number) ?? 0) + delta,
+            manosGanadas: ((lbPrev['manosGanadas'] as number) ?? 0) + ganadasRonda,
+            mejorRacha: Math.max(
+              (lbPrev['mejorRacha'] as number) ?? 0,
+              stats.rachaActual,
+            ),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
         tx.set(userRef.collection('transactions').doc(), {
           type: delta >= 0 ? 'win' : 'loss',
           amount: Math.abs(delta),

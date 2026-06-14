@@ -93,6 +93,22 @@ clientes solo leen, y la UI muestra a cada jugador sus cartas + las visibles del
 | `players` | map | `uid → { manos:[{cartas, apuesta, doblada, rendida, asPartido}], indiceMano, done, result }` |
 | `updatedAt` | timestamp | Última actualización |
 
+## `leaderboards/{periodo}/entries/{uid}`
+
+Ranking semanal (Fase 10). `periodo` es la semana ISO-8601 (`YYYY-Www`, p. ej. `2026-W24`). Las
+entradas las escribe `playerAction` al resolver cada ronda (🔒 el cliente solo lee). Una scheduled
+function (`purgarLeaderboards`) borra los periodos con más de 8 semanas de antigüedad.
+
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| `uid` | string | Id del jugador (== id del doc) |
+| `displayName` | string | Nombre cacheado (denormalizado para el ranking) |
+| `avatar` | string | Avatar cacheado |
+| `gananciaNeta` | int | 🔒 Créditos netos de la semana (acumulado, puede ser negativo) |
+| `manosGanadas` | int | 🔒 Manos ganadas en la semana (acumulado) |
+| `mejorRacha` | int | 🔒 Mayor racha de victorias alcanzada en la semana |
+| `updatedAt` | timestamp | Última ronda agregada |
+
 ## Notas de diseño
 
 - **Desnormalización controlada:** se cachean `displayName`/`avatar` en `rooms.players` para no leer N

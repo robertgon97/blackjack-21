@@ -12,6 +12,7 @@ import '../../features/friends/domain/contacto.dart';
 import '../../features/friends/presentation/friends_page.dart';
 import '../../features/friends/presentation/transfer_page.dart';
 import '../../features/game/presentation/pantalla_juego.dart';
+import '../../features/leaderboards/presentation/leaderboard_page.dart';
 import '../../features/rooms/presentation/lobby_page.dart';
 import '../../features/rooms/presentation/room_page.dart';
 import '../../features/rooms/presentation/sala_provider.dart';
@@ -86,6 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'perfil',
             builder: (_, __) => const PerfilPage(),
+          ),
+          GoRoute(
+            path: 'leaderboard',
+            builder: (_, __) => const LeaderboardPage(),
           ),
           GoRoute(
             path: 'historial',

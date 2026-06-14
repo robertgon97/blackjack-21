@@ -83,6 +83,11 @@ class BarraEstado extends ConsumerWidget {
             onPressed: () => context.push('/perfil'),
           ),
           IconButton(
+            tooltip: 'Ranking',
+            icon: const Icon(Icons.leaderboard, color: Colors.white),
+            onPressed: () => context.push('/leaderboard'),
+          ),
+          IconButton(
             tooltip: 'Multijugador',
             icon: const Icon(Icons.groups, color: Colors.white),
             onPressed: () => context.push('/lobby'),

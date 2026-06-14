@@ -174,6 +174,21 @@ service cloud.firestore {
       }
     }
 
+    // ---------- leaderboards ----------
+    // Ranking semanal (Fase 10). Las entradas las escribe `playerAction`
+    // (Admin SDK) en leaderboards/{periodo}/entries/{uid}; el cliente solo lee
+    // (top global, top de amigos, su posición). El doc de periodo es de solo
+    // lectura para detectar su existencia.
+    match /leaderboards/{periodo} {
+      allow read: if autenticado();
+      allow write: if false;
+
+      match /entries/{uid} {
+        allow read: if autenticado();
+        allow write: if false;
+      }
+    }
+
     // ---------- games ----------
     // El reparto, las acciones y la resolución los hacen las Functions (anti-trampa).
     // Los clientes pueden leer el estado público de la partida (sin el shoe).
