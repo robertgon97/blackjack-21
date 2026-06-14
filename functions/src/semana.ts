@@ -9,6 +9,14 @@
  * Semana en lunes; la semana 1 contiene el primer jueves del año; el año es el
  * del jueves de esa semana.
  */
+/**
+ * Día calendario en UTC como `YYYY-MM-DD`. Base de la racha del bono diario
+ * (Fase 10b): consistente entre cliente y servidor por usar UTC.
+ */
+export function idDiaUtc(fecha: Date): string {
+  return fecha.toISOString().slice(0, 10);
+}
+
 export function idSemanaIso(fecha: Date): string {
   const d = new Date(
     Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()),

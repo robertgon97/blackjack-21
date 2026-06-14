@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/presentation/auth_provider.dart';
 import '../data/firestore_wallet_repository.dart';
+import '../domain/bono_diario.dart';
 import '../domain/i_wallet_repository.dart';
 import '../domain/transaccion.dart';
 
@@ -21,4 +22,11 @@ final transaccionesProvider = StreamProvider<List<Transaccion>>((ref) {
   final perfil = ref.watch(perfilStreamProvider).valueOrNull;
   if (perfil == null) return const Stream.empty();
   return ref.watch(walletRepositoryProvider).transaccionesStream(perfil.uid);
+});
+
+/// Estado del bono diario (racha + disponibilidad) del usuario autenticado.
+final estadoBonoProvider = StreamProvider<EstadoBonoDiario>((ref) {
+  final perfil = ref.watch(perfilStreamProvider).valueOrNull;
+  if (perfil == null) return const Stream.empty();
+  return ref.watch(walletRepositoryProvider).estadoBonoStream(perfil.uid);
 });

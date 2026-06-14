@@ -36,7 +36,7 @@ service cloud.firestore {
     function noTocaCamposProtegidos() {
       return request.resource.data.balance == resource.data.balance &&
         request.resource.data.lastAdReward == resource.data.lastAdReward &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['conversionBonusGranted', 'isAnonymous', 'lastDailyBonus', 'stats', 'logros']);
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['conversionBonusGranted', 'isAnonymous', 'lastDailyBonus', 'lastDailyBonusDay', 'dailyStreak', 'stats', 'logros']);
     }
 
     // ---------- users ----------

@@ -352,3 +352,24 @@ listeners about user (...)`, y el usuario confirma que el login con Google entra
 Android; el cambio de "lo lee de google-services.json" a "hay que pasarlo" es silencioso (compila bien,
 solo falla en runtime con `idToken` null). El síntoma típico es "el login con Google no funciona" sin un
 error obvio.
+
+---
+
+## 2026-06-14 — Scheduled function desplegada sin permiso de Cloud Scheduler en el SA del CI
+
+**Qué falló:** al mergear la Fase 10a, el job **Deploy Functions** del workflow `deploy-firebase.yml`
+falló al crear la scheduled function `purgarLeaderboards` (`functions/src/leaderboard.ts`, `onSchedule`):
+`HTTP 403 — el service account carece de "cloudscheduler.jobs.update"`. El resto del deploy (la
+agregación de leaderboard en `playerAction`, Hosting y las reglas de Firestore) sí se desplegó. Como la
+función queda en el código, **todos los deploys siguientes volverían a fallar** en ese paso.
+
+**Causa:** se introdujo la primera `onSchedule` del proyecto sin verificar que el service account del CI
+(`FIREBASE_SERVICE_ACCOUNT`) tuviera rol para gestionar Cloud Scheduler. Las callable/transaccionales no
+lo requerían; una scheduled sí crea un job de Cloud Scheduler.
+
+**Corrección:** otorgar al service account el rol `roles/cloudscheduler.admin` en el proyecto
+`blackjack-21-app` (acción manual en GCP, fuera del repo) y re-ejecutar el deploy.
+
+**Aprendizaje:** antes de añadir una scheduled function (u otro tipo de trigger nuevo: Eventarc,
+Pub/Sub…), confirmar que el SA del CI tiene los roles IAM correspondientes. El despliegue habilita las
+APIs automáticamente, pero **no** concede los permisos IAM del SA.

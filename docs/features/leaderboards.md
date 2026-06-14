@@ -77,5 +77,5 @@ desde `barra_estado.dart`.
 
 ## Pendiente de la Fase 10
 
-- **10b** — bono diario con racha (ampliar `claimDailyBonus`).
+- ✅ **10b** — bono diario con racha ([`bono-diario.md`](bono-diario.md)).
 - **10c** — misiones diarias/semanales.

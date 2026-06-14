@@ -17,6 +17,7 @@ import '../../features/rooms/presentation/lobby_page.dart';
 import '../../features/rooms/presentation/room_page.dart';
 import '../../features/rooms/presentation/sala_provider.dart';
 import '../../features/profile/presentation/perfil_page.dart';
+import '../../features/wallet/presentation/bono_diario_page.dart';
 import '../../features/wallet/presentation/historial_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -87,6 +88,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'perfil',
             builder: (_, __) => const PerfilPage(),
+          ),
+          GoRoute(
+            path: 'bono',
+            builder: (_, __) => const BonoDiarioPage(),
           ),
           GoRoute(
             path: 'leaderboard',

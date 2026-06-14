@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../../core/utils/semana.dart';
+import '../domain/bono_diario.dart';
 import '../domain/i_wallet_repository.dart';
 import '../domain/transaccion.dart';
 
@@ -19,12 +21,16 @@ class FirestoreWalletRepository implements IWalletRepository {
   final FirebaseFunctions _functions;
 
   @override
-  Future<int> reclamarBonoDiario() async {
+  Future<ResultadoBonoDiario> reclamarBonoDiario() async {
     try {
       final res =
           await _functions.httpsCallable('claimDailyBonus').call<Object?>();
       final data = res.data as Map<Object?, Object?>;
-      return (data['balance'] as num).toInt();
+      return ResultadoBonoDiario(
+        balance: (data['balance'] as num).toInt(),
+        monto: (data['amount'] as num).toInt(),
+        racha: (data['streak'] as num).toInt(),
+      );
     } on FirebaseFunctionsException catch (e) {
       final mensaje = switch (e.code) {
         'failed-precondition' =>
@@ -35,6 +41,30 @@ class FirestoreWalletRepository implements IWalletRepository {
       };
       throw Exception(mensaje);
     }
+  }
+
+  @override
+  Stream<EstadoBonoDiario> estadoBonoStream(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map((doc) {
+      final data = doc.data();
+      final racha = (data?['dailyStreak'] as num?)?.toInt() ?? 0;
+      // Día del último reclamo (compat con cuentas que solo tienen el timestamp).
+      final lastDay = data?['lastDailyBonusDay'] as String?;
+      final lastTs = data?['lastDailyBonus'] as Timestamp?;
+      final ultimoDia =
+          lastDay ?? (lastTs != null ? idDiaUtc(lastTs.toDate()) : null);
+
+      final ahora = DateTime.now();
+      final hoy = idDiaUtc(ahora);
+      final ayer = idDiaUtc(ahora.subtract(const Duration(days: 1)));
+
+      // La racha solo sigue vigente si el último reclamo fue hoy o ayer.
+      final rachaVigente = (ultimoDia == hoy || ultimoDia == ayer) ? racha : 0;
+      return EstadoBonoDiario(
+        racha: rachaVigente,
+        disponibleHoy: ultimoDia != hoy,
+      );
+    });
   }
 
   @override
