@@ -7,6 +7,7 @@ import '../telemetria/telemetria_provider.dart';
 import 'router_observer.dart';
 import '../../features/auth/presentation/pantalla_conversion.dart';
 import '../../features/auth/presentation/pantalla_login.dart';
+import '../../features/auth/presentation/pantalla_splash.dart';
 import '../../features/friends/domain/contacto.dart';
 import '../../features/friends/presentation/friends_page.dart';
 import '../../features/friends/presentation/transfer_page.dart';
@@ -17,20 +18,38 @@ import '../../features/rooms/presentation/sala_provider.dart';
 import '../../features/wallet/presentation/historial_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final perfilListenable = _PerfilListenable(ref);
+  final sesionListenable = _SesionListenable(ref);
 
   return GoRouter(
-    refreshListenable: perfilListenable,
+    refreshListenable: sesionListenable,
     observers: [TelemetriaRouterObserver(ref.read(servicioTelemetriaProvider))],
     initialLocation: '/',
     redirect: (context, state) {
-      final perfil = ref.read(perfilStreamProvider).valueOrNull;
+      // El guard se basa en el ESTADO DE AUTH (token), no en el perfil de
+      // Firestore: la sesión persiste aunque la lectura del perfil falle o
+      // tarde (issue #49).
+      final sesion = ref.read(sesionStreamProvider);
       final enLogin = state.matchedLocation == '/login';
-      if (perfil == null && !enLogin) return '/login';
-      if (perfil != null && enLogin) return '/';
+      final enSplash = state.matchedLocation == '/splash';
+
+      // Cold start: mientras Auth restaura el usuario el stream está en
+      // AsyncLoading. No confundir «cargando» con «sin sesión» → splash.
+      if (sesion.isLoading) {
+        return enSplash ? null : '/splash';
+      }
+
+      final autenticado = sesion.valueOrNull ?? false;
+      // Sin sesión y fuera de login → login (cubre también salir del splash).
+      if (!autenticado && !enLogin) return '/login';
+      // Con sesión: sacar al usuario del splash o del login hacia el juego.
+      if (autenticado && (enLogin || enSplash)) return '/';
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (_, __) => const PantallaSplash(),
+      ),
       GoRoute(
         path: '/login',
         builder: (_, __) => const PantallaLogin(),
@@ -45,7 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (context, state) async {
           // Sin sesión, la query a Firestore la denegarían las reglas (excepción
           // no capturada que rompe el router). Verificar auth antes del await.
-          if (ref.read(perfilStreamProvider).valueOrNull == null) {
+          if (ref.read(sesionStreamProvider).valueOrNull != true) {
             return '/login';
           }
           final code = state.pathParameters['code'] ?? '';
@@ -93,9 +112,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Hace que GoRouter se refresque cuando cambia el estado de auth.
-class _PerfilListenable extends ChangeNotifier {
-  _PerfilListenable(Ref ref) {
-    ref.listen(perfilStreamProvider, (_, __) => notifyListeners());
+/// Hace que GoRouter reevalúe el guard cuando cambia el estado de sesión
+/// (incluida la transición AsyncLoading → AsyncData del cold start).
+class _SesionListenable extends ChangeNotifier {
+  _SesionListenable(Ref ref) {
+    ref.listen(sesionStreamProvider, (_, __) => notifyListeners());
   }
 }

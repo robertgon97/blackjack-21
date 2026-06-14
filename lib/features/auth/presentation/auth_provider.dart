@@ -12,6 +12,13 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   );
 });
 
+/// Estado de sesión basado solo en el token de Auth (sin Firestore). Lo usa el
+/// guard del router: distingue «cargando» (cold start) de «sin sesión» para no
+/// rebotar a login mientras Firebase restaura el usuario (issue #49).
+final sesionStreamProvider = StreamProvider<bool>(
+  (ref) => ref.watch(authRepositoryProvider).sesionStream,
+);
+
 /// Stream del perfil autenticado; emite `null` cuando no hay sesión activa.
 final perfilStreamProvider = StreamProvider<PerfilUsuario?>(
   (ref) => ref.watch(authRepositoryProvider).perfilStream,

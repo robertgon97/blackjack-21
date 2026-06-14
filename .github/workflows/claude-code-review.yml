@@ -8,6 +8,10 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
+    # Backstop del job: si algo se cuelga fuera del paso de Claude, no dejamos el
+    # runner corriendo hasta el límite por defecto (6 h). Las corridas normales
+    # tardan 2-5 min.
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
@@ -19,6 +23,10 @@ jobs:
           fetch-depth: 1
 
       - name: Revisión de Claude
+        # claude-code-action se cuelga de forma intermitente tras iniciar la
+        # sesión (MCP sin progreso): sin este límite el job quedaba "pegado"
+        # hasta cancelarlo a mano. Lo matamos en 10 min → fallo visible, no cuelgue.
+        timeout-minutes: 10
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

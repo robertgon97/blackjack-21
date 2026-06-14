@@ -76,13 +76,35 @@ class FirebaseAuthRepository implements IAuthRepository {
   }
 
   @override
+  Stream<bool> get sesionStream {
+    // El estado de sesión depende SOLO del token de Auth (persistido en disco
+    // por el SDK). No toca Firestore, así que un fallo de red al arrancar no
+    // hace que la app presente la sesión como cerrada (issue #49).
+    return _auth.userChanges().map((user) => user != null);
+  }
+
+  @override
   Stream<PerfilUsuario?> get perfilStream {
     // userChanges() (no authStateChanges()) emite también en cambios in-place
     // del usuario —como linkWithCredential / refresco de token— de modo que la
     // UI deja de ver el perfil anónimo justo tras convertir la cuenta.
     return _auth.userChanges().asyncMap((user) async {
       if (user == null) return null;
-      return _fetchPerfil(user);
+      // Tolerante a fallos: si la lectura de Firestore falla (sin red al
+      // arrancar, reglas, App Check) NO propagamos el error al stream —eso
+      // dejaría el perfil en AsyncError y la UI sin saldo—. Devolvemos un
+      // perfil mínimo derivado del token; el saldo real llega cuando el stream
+      // vuelva a emitir con red.
+      try {
+        return await _fetchPerfil(user);
+      } catch (e, stack) {
+        // No fatal: la sesión sigue válida. Se registra en Crashlytics (con la
+        // traza real) porque `debugPrint` se omite en release y este fallo deja
+        // al usuario sin saldo/perfil hasta la próxima emisión.
+        await _telemetria.registrarError(e, stack);
+        debugPrint('perfilStream: lectura de perfil falló, perfil mínimo: $e');
+        return _perfilMinimo(user);
+      }
     });
   }
 
@@ -90,7 +112,12 @@ class FirebaseAuthRepository implements IAuthRepository {
   PerfilUsuario? get perfilActual {
     final user = _auth.currentUser;
     if (user == null) return null;
-    // Devuelve un perfil mínimo sincrónico; el saldo real llega por Firestore.
+    return _perfilMinimo(user);
+  }
+
+  /// Perfil mínimo sincrónico derivado del token de Auth; el saldo real llega
+  /// por Firestore. Se usa al arrancar y como fallback si Firestore no responde.
+  PerfilUsuario _perfilMinimo(User user) {
     return PerfilUsuario(
       uid: user.uid,
       displayName: user.displayName ?? 'Jugador',
