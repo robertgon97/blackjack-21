@@ -36,7 +36,7 @@ class FirestoreMisionesRepository implements IMisionesRepository {
           .httpsCallable('claimMission')
           .call<Object?>({'missionId': missionId});
       final data = res.data as Map<Object?, Object?>;
-      return (data['balance'] as num).toInt();
+      return (data['balance'] as num?)?.toInt() ?? 0;
     } on FirebaseFunctionsException catch (e) {
       final mensaje = switch (e.code) {
         'failed-precondition' =>
