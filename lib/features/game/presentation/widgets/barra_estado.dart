@@ -78,6 +78,11 @@ class BarraEstado extends ConsumerWidget {
             ),
           ),
           IconButton(
+            tooltip: 'Mi perfil',
+            icon: const Icon(Icons.account_circle, color: Colors.white),
+            onPressed: () => context.push('/perfil'),
+          ),
+          IconButton(
             tooltip: 'Multijugador',
             icon: const Icon(Icons.groups, color: Colors.white),
             onPressed: () => context.push('/lobby'),

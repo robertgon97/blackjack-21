@@ -15,6 +15,7 @@ import '../../features/game/presentation/pantalla_juego.dart';
 import '../../features/rooms/presentation/lobby_page.dart';
 import '../../features/rooms/presentation/room_page.dart';
 import '../../features/rooms/presentation/sala_provider.dart';
+import '../../features/profile/presentation/perfil_page.dart';
 import '../../features/wallet/presentation/historial_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -82,6 +83,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (_, __) => const PantallaJuego(),
         routes: [
+          GoRoute(
+            path: 'perfil',
+            builder: (_, __) => const PerfilPage(),
+          ),
           GoRoute(
             path: 'historial',
             builder: (_, __) => const HistorialPage(),

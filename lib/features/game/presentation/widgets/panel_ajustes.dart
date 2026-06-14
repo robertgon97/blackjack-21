@@ -112,6 +112,20 @@ class _PanelAjustesState extends ConsumerState<PanelAjustes> {
                 ),
               ),
               const Divider(height: 32),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.account_circle),
+                title: const Text('Mi perfil'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  // Capturar el router antes del pop: tras cerrar el panel el
+                  // widget queda desmontado y `context` ya no sirve.
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+                  router.push('/perfil');
+                },
+              ),
+              const Divider(height: 32),
               _switchPrivacidad(),
               const Divider(height: 32),
               Center(

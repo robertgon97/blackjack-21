@@ -49,6 +49,11 @@ abstract interface class IAuthRepository {
   /// Conserva el mismo `uid` y acredita el bono de conversión.
   Future<PerfilUsuario> vincularConGoogle();
 
+  /// Actualiza los campos editables del perfil del usuario autenticado
+  /// (nombre visible y avatar). No toca el saldo ni `isAnonymous` (protegidos
+  /// por las reglas de Firestore). Al menos uno de los parámetros debe venir.
+  Future<void> actualizarPerfil({String? displayName, String? avatar});
+
   /// Cierra la sesión actual.
   Future<void> salir();
 }

@@ -116,7 +116,7 @@ lib/
 ## Tests
 
 ```bash
-flutter test                           # corre los 42 tests de domain
+flutter test                           # corre los 49 tests de domain
 flutter test --reporter=expanded       # con detalle de cada test
 ```
 
@@ -166,14 +166,15 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 
 ## Pendiente (fases futuras)
 
-- Riverpod providers para las features que faltan (comms, profile…)
-- `freezed` para los modelos (hoy son inmutables con `copyWith` a mano)
-- Fichas de `docs/features/` para las features restantes (comms, profile…)
-- **App Check enforcement:** hoy en **modo monitor**; activar el enforcement en Firestore y Functions
-  desde la consola tras medir tráfico legítimo (ver `docs/features/app-check.md`).
-- **Warning KGP:** persiste hasta que `cloud_firestore` migre a *built-in Kotlin* (aún aplica el viejo
-  KGP sin guard). Cuando lo haga, poner `android.builtInKotlin=true`. Benigno con Flutter 3.44.x.
-- **Fase 8 (siguiente):** perfil/progresión/leaderboards. Hoja de ruta en `docs/plans/`.
+> Los pendientes técnicos sueltos están documentados como issues de GitHub:
+>
+> - [#54](https://github.com/robertgon97/blackjack-21/issues/54) — App Check enforcement (hoy modo monitor).
+> - [#55](https://github.com/robertgon97/blackjack-21/issues/55) — Warning KGP (bloqueado por `cloud_firestore`).
+> - [#56](https://github.com/robertgon97/blackjack-21/issues/56) — Migrar modelos a `freezed` + `json_serializable`.
+> - [#57](https://github.com/robertgon97/blackjack-21/issues/57) — Providers de Riverpod + ficha de feature de `comms`.
+
+- **Fase 9 (siguiente):** progresión (niveles/XP + logros, migra `stats.js`). Hoja de ruta en
+  [`docs/plans/02-perfil-progresion-y-leaderboards.md`](docs/plans/02-perfil-progresion-y-leaderboards.md).
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
@@ -217,5 +218,13 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > eliminar aún (bloqueado por `cloud_firestore`, ver «Pendiente»).
 > Ficha: [`docs/features/app-check.md`](docs/features/app-check.md).
 >
-> **Siguiente — Fases 8–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
-> (perfil/progresión/leaderboards, monetización, comunicación…).
+> **Hecho en Fase 8:** feature `features/profile/` (perfil + estadísticas de juego). Pantalla `/perfil`
+> con cabecera editable (nombre/avatar), código de invitación, tipo de cuenta, "miembro desde", saldo y
+> acceso al historial, más una grilla de estadísticas (manos, % victoria, blackjacks, rachas, totales).
+> Las stats las acumula **server-side** la Function `playerAction` en `users/{uid}.stats` (función pura
+> `acumularStats` en `functions/src/blackjack.ts`, espejo de `profile/domain/estadisticas.dart`); el
+> cliente solo las lee (`firestore.rules` protege `stats`). **Solo el multijugador** alimenta las stats.
+> Accesos desde `BarraEstado` y `PanelAjustes`. Ficha: [`docs/features/perfil.md`](docs/features/perfil.md).
+>
+> **Siguiente — Fases 9–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
+> (progresión/leaderboards, monetización, comunicación…).
