@@ -1,6 +1,6 @@
 // ============================================================
 //  Barra superior: datos del juego (banca, en juego, conteo) y
-//  el botón que abre el menú lateral (issue #67).
+//  el botón que abre el menú lateral.
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -42,6 +42,8 @@ class BarraEstado extends ConsumerWidget {
         children: [
           _Dato(etiqueta: 'Banca', valor: dinero(datos.banca), acento: acento),
           const SizedBox(width: 16),
+          // "En juego" se muestra en todas las fases (en apuestas refleja la
+          // apuesta pendiente; $0 si aún no se ha apostado), como antes.
           _Dato(etiqueta: 'En juego', valor: dinero(datos.enJuego)),
           if (datos.mostrarConteo) ...[
             const SizedBox(width: 16),

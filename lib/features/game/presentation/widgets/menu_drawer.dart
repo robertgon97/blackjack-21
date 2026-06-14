@@ -1,9 +1,9 @@
 // ============================================================
-//  Menú lateral (Drawer) de navegación principal (issue #67).
+//  Menú lateral (Drawer) de navegación principal.
 //
-//  Agrupa el acceso a perfil, progresión, social, tema y ajustes,
-//  que antes saturaban la BarraEstado. Vive en la pantalla del
-//  juego (la home), que es donde se monta el Scaffold con drawer.
+//  Agrupa el acceso a perfil, progresión, social, tema y ajustes.
+//  Vive en la pantalla del juego (la home), que es donde se monta
+//  el Scaffold con drawer.
 // ============================================================
 
 import 'package:flutter/material.dart';
@@ -99,17 +99,22 @@ class MenuDrawer extends ConsumerWidget {
         ],
       ),
     );
-    if (elegido != null) ref.read(temaProvider.notifier).seleccionar(elegido);
+    if (elegido != null && context.mounted) {
+      ref.read(temaProvider.notifier).seleccionar(elegido);
+    }
   }
 
   void _abrirAjustes(BuildContext context, WidgetRef ref) {
     final ctrl = ref.read(controladorJuegoProvider.notifier);
     final configActual = ref.read(controladorJuegoProvider).config;
+    // Capturamos el contexto del Scaffold (fuera del drawer) ANTES del pop:
+    // tras cerrarlo, el contexto del MenuDrawer queda desmontado y no sirve.
+    final scaffoldContext = Scaffold.of(context).context;
     Navigator.of(context).pop(); // cierra el drawer
     showModalBottomSheet<void>(
-      context: context,
+      context: scaffoldContext,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(scaffoldContext).colorScheme.surface,
       builder: (_) => PanelAjustes(
         config: configActual,
         onGuardar: ctrl.aplicarConfig,
