@@ -116,7 +116,7 @@ lib/
 ## Tests
 
 ```bash
-flutter test                           # corre los 77 tests de domain
+flutter test                           # corre los 85 tests de domain
 flutter test --reporter=expanded       # con detalle de cada test
 ```
 
@@ -173,11 +173,9 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > - [#56](https://github.com/robertgon97/blackjack-21/issues/56) — Migrar modelos a `freezed` + `json_serializable`.
 > - [#57](https://github.com/robertgon97/blackjack-21/issues/57) — Providers de Riverpod + ficha de feature de `comms`.
 
-- **Fase 10 (en curso):** se entrega en sub-PRs. ✅ **10a** leaderboards semanales + top de amigos
-  ([`docs/features/leaderboards.md`](docs/features/leaderboards.md)). ✅ **10b** bono diario con racha
-  ([`docs/features/bono-diario.md`](docs/features/bono-diario.md)). Pendiente: **10c** misiones
-  diarias/semanales. Hoja de ruta en
-  [`docs/plans/02-perfil-progresion-y-leaderboards.md`](docs/plans/02-perfil-progresion-y-leaderboards.md).
+- **Fase 11 (siguiente):** monetización y pulido (anuncios, PWA, push). Hoja de ruta en
+  [`docs/plans/01-firebase-observabilidad-y-crecimiento.md`](docs/plans/01-firebase-observabilidad-y-crecimiento.md)
+  y [`docs/plans/00-app-multiplataforma.md`](docs/plans/00-app-multiplataforma.md).
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
@@ -251,5 +249,12 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > botón de reclamo; lógica pura espejo en `wallet/domain/bono_diario.dart`. Ficha:
 > [`docs/features/bono-diario.md`](docs/features/bono-diario.md).
 >
-> **Siguiente — Fase 10c y 11–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
-> (misiones, monetización, comunicación…).
+> **Hecho en Fase 10c:** misiones diarias/semanales (`features/misiones/`). Progreso server-side por
+> periodo en `users/{uid}/progreso/{día|semana}` (lo acumula `playerAction`); recompensa reclamable e
+> idempotente vía `claimMission` (`functions/src/misiones.ts`). Catálogo espejo TS↔Dart
+> (`misiones/domain/mision.dart`), `MisionesPage` (`/misiones`) con progreso y reclamo, tipo de
+> transacción `mission_reward`. Ficha: [`docs/features/misiones.md`](docs/features/misiones.md).
+> Con esto la **Fase 10 queda completa** (10a leaderboards · 10b bono con racha · 10c misiones).
+>
+> **Siguiente — Fases 11–14:** hoja de ruta en [`docs/plans/`](docs/plans/)
+> (monetización/PWA/push, Remote Config + A/B, comunicación, distribución…).

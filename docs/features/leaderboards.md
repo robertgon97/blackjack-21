@@ -75,7 +75,7 @@ desde `barra_estado.dart`.
 - **Prueba manual** (Function desplegada + multijugador): jugar rondas con ≥2 cuentas y ver el ranking
   poblarse en `/leaderboard`; cambiar entre métricas y entre Global/Amigos; comprobar la posición propia.
 
-## Pendiente de la Fase 10
+## Resto de la Fase 10
 
 - ✅ **10b** — bono diario con racha ([`bono-diario.md`](bono-diario.md)).
-- **10c** — misiones diarias/semanales.
+- ✅ **10c** — misiones diarias/semanales ([`misiones.md`](misiones.md)).

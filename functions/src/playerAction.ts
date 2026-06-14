@@ -11,7 +11,7 @@ import {
   resolverMano,
 } from './blackjack';
 import { evaluarLogros } from './logros';
-import { idSemanaIso } from './semana';
+import { idDiaUtc, idSemanaIso } from './semana';
 
 interface DatosJugador {
   manos: Mano[];
@@ -98,7 +98,9 @@ export const playerAction = onCall(
       // Leaderboard semanal (Fase 10): se lee la entrada del periodo actual de
       // cada jugador en la fase de reads para poder acumular `gananciaNeta` y
       // calcular el máximo de `mejorRacha` de la semana antes de escribir.
-      const periodoLb = idSemanaIso(new Date());
+      const ahoraLb = new Date();
+      const periodoLb = idSemanaIso(ahoraLb);
+      const diaProg = idDiaUtc(ahoraLb); // periodo de las misiones diarias (10c)
       const lbCol = db.collection('leaderboards').doc(periodoLb).collection('entries');
       const lbDocs = await Promise.all(
         playerUids.map((id) => tx.get(lbCol.doc(id))),
@@ -268,6 +270,8 @@ export const playerAction = onCall(
         description: string;
         stats: EstadisticasJugador;
         ganadasRonda: number;
+        manosRonda: number;
+        blackjacksRonda: number;
         mainResult: ResultadoMano;
       }> = [];
 
@@ -303,6 +307,9 @@ export const playerAction = onCall(
         const ganadasRonda = resultados.filter(
           (r) => r === 'win' || r === 'blackjack',
         ).length;
+        const blackjacksRonda = resultados.filter(
+          (r) => r === 'blackjack',
+        ).length;
 
         balanceUpdates.push({
           uid: pUid,
@@ -310,6 +317,8 @@ export const playerAction = onCall(
           description: `Ronda ${(room.round as number) || 1}: ${mainResult}`,
           stats: nuevasStats,
           ganadasRonda,
+          manosRonda: pData.manos.length,
+          blackjacksRonda,
           mainResult,
         });
       }
@@ -334,11 +343,26 @@ export const playerAction = onCall(
         description,
         stats,
         ganadasRonda,
+        manosRonda,
+        blackjacksRonda,
         mainResult,
       } of balanceUpdates) {
         const currentBalance = (userDataMap[pUid]?.['balance'] as number) || 0;
         const newBalance = Math.max(0, currentBalance + delta);
         const userRef = db.collection('users').doc(pUid);
+
+        // Progreso de misiones (Fase 10c): contadores del día y de la semana.
+        // arrayUnion/increment crean el doc si no existe; `reclamadas` lo gestiona
+        // claimMission. El cliente no escribe aquí (firestore.rules).
+        const incProgreso = {
+          manosJugadas: FieldValue.increment(manosRonda),
+          ganadas: FieldValue.increment(ganadasRonda),
+          blackjacks: FieldValue.increment(blackjacksRonda),
+          gananciaNeta: FieldValue.increment(delta),
+        };
+        const progresoCol = userRef.collection('progreso');
+        tx.set(progresoCol.doc(diaProg), incProgreso, { merge: true });
+        tx.set(progresoCol.doc(periodoLb), incProgreso, { merge: true });
 
         // Logros (Fase 9): se evalúan server-side con las stats ya acumuladas y
         // el saldo resultante; se agregan los nuevos al array existente.
