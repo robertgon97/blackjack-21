@@ -32,9 +32,16 @@ class FirebaseAuthRepository implements IAuthRepository {
   // una instancia; ahora se accede al singleton y se inicializa de forma lazy.
   bool _googleListo = false;
 
+  // Web OAuth client ID (google-services.json, client_type 3). En 6.x el plugin
+  // de Android lo tomaba solo de google-services.json; en 7.x hay que pasarlo
+  // como serverClientId o el `idToken` sale NULL en Android y Firebase rechaza
+  // la credencial (es público, no es secreto).
+  static const _serverClientId =
+      '822375769128-871tqt5u135giud80tuqqadud0r17g0o.apps.googleusercontent.com';
+
   Future<void> _initGoogle() async {
     if (_googleListo) return;
-    await GoogleSignIn.instance.initialize();
+    await GoogleSignIn.instance.initialize(serverClientId: _serverClientId);
     _googleListo = true;
   }
 

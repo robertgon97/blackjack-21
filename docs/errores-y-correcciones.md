@@ -328,3 +328,27 @@ sus propios errores. Verificado en el Galaxy A15: la pantalla de login renderiza
 excepción. La regla es activar estos servicios *fire-and-forget* o con `timeout`, no solo envolverlos en
 `try-catch`. Sigue la misma lección de [pantalla negra] anteriores: nada entre `initializeApp` y
 `runApp` puede quedarse esperando indefinidamente.
+
+---
+
+## 2026-06-14 — Login con Google roto tras migrar a google_sign_in 7.x: faltaba `serverClientId`
+
+**Qué falló:** tras la migración a `google_sign_in 7.x`, el login con Google dejó de funcionar (Firebase
+rechazaba la credencial), mientras que el login anónimo y la app en general sí funcionaban.
+
+**Causa:** en 6.x el plugin de Android tomaba automáticamente el *Web client ID*
+(`default_web_client_id`) del `google-services.json` para emitir el `idToken`. En **7.x ya no**: hay que
+pasarlo explícitamente como `serverClientId` en `GoogleSignIn.instance.initialize(...)`. Sin él, el
+`idToken` llega **null**, y `GoogleAuthProvider.credential(idToken: null)` produce una credencial
+inválida que Firebase Auth rechaza.
+
+**Corrección:** en `firebase_auth_repository.dart`, `_initGoogle()` ahora llama
+`initialize(serverClientId: <web client_id>)` con el cliente OAuth de tipo 3 del `google-services.json`
+(es público, no secreto). Verificado en el Galaxy A15: el `logcat` muestra
+`FetchGoogleIdTokenCredentialOperation Operation succeeded` y `FirebaseAuth: Notifying auth state
+listeners about user (...)`, y el usuario confirma que el login con Google entra al juego.
+
+**Aprendizaje:** al migrar `google_sign_in` a 7.x, revisar SIEMPRE `initialize(serverClientId:)` en
+Android; el cambio de "lo lee de google-services.json" a "hay que pasarlo" es silencioso (compila bien,
+solo falla en runtime con `idToken` null). El síntoma típico es "el login con Google no funciona" sin un
+error obvio.
