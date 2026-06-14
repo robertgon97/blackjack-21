@@ -26,8 +26,13 @@ class EntradaRanking {
     required this.mejorRacha,
   });
 
+  /// Id del jugador (coincide con el id del documento de la entrada).
   final String uid;
+
+  /// Nombre visible cacheado (denormalizado para el ranking).
   final String displayName;
+
+  /// Avatar (emoji o URL) cacheado.
   final String avatar;
 
   /// Créditos netos ganados en la semana (puede ser negativo).
