@@ -130,7 +130,7 @@ class _BannerPosicion extends ConsumerWidget {
       color: Theme.of(context).colorScheme.primaryContainer,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Text(
-        'Estás en el puesto #$pos esta semana',
+        'Estás en el puesto #$pos en ${metrica.etiqueta} esta semana',
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
     );

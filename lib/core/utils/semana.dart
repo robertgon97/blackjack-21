@@ -14,8 +14,13 @@
 /// siguiente, y viceversa). Se calcula en UTC para que el periodo no dependa de
 /// la zona horaria del dispositivo.
 String idSemanaIso(DateTime fecha) {
+  // Convertir a UTC ANTES de extraer los componentes: `fecha.year/month/day` de
+  // un DateTime local darían la fecha local, que cerca de medianoche puede caer
+  // en otro día (y otra semana) que la del servidor —que calcula en UTC—,
+  // dejando al cliente leyendo un periodo vacío.
+  final u = fecha.toUtc();
   // Normaliza a medianoche UTC; el jueves de la semana define año y número.
-  final d = DateTime.utc(fecha.year, fecha.month, fecha.day);
+  final d = DateTime.utc(u.year, u.month, u.day);
   final jueves = d.add(Duration(days: 4 - d.weekday)); // weekday: 1=lun..7=dom
   final inicioAnio = DateTime.utc(jueves.year, 1, 1);
   final semana = 1 + (jueves.difference(inicioAnio).inDays ~/ 7);
