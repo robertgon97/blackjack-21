@@ -28,6 +28,7 @@ class MenuDrawer extends ConsumerWidget {
     final saldo = ref.watch(saldoProvider).valueOrNull ?? perfil?.balance ?? 0;
     final temaActual = ref.watch(temaProvider);
     final avatar = perfil?.avatar ?? '🃏';
+    final esUrl = avatarEsUrl(avatar);
 
     return Drawer(
       child: ListView(
@@ -37,9 +38,9 @@ class MenuDrawer extends ConsumerWidget {
             accountName: Text(perfil?.displayName ?? 'Jugador'),
             accountEmail: Text('Saldo: ${dinero(saldo)}'),
             currentAccountPicture: CircleAvatar(
-              backgroundImage:
-                  avatarEsUrl(avatar) ? NetworkImage(avatar) : null,
-              child: avatarEsUrl(avatar)
+              backgroundImage: esUrl ? NetworkImage(avatar) : null,
+              onBackgroundImageError: esUrl ? (_, __) {} : null,
+              child: esUrl
                   ? null
                   : Text(avatar, style: const TextStyle(fontSize: 28)),
             ),

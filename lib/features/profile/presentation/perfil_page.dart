@@ -101,14 +101,15 @@ class _Cabecera extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final esUrl = avatarEsUrl(perfil.avatar);
     return Column(
       children: [
         CircleAvatar(
           radius: 44,
           backgroundColor: theme.colorScheme.primaryContainer,
-          backgroundImage:
-              avatarEsUrl(perfil.avatar) ? NetworkImage(perfil.avatar) : null,
-          child: avatarEsUrl(perfil.avatar)
+          backgroundImage: esUrl ? NetworkImage(perfil.avatar) : null,
+          onBackgroundImageError: esUrl ? (_, __) {} : null,
+          child: esUrl
               ? null
               : Text(perfil.avatar, style: const TextStyle(fontSize: 44)),
         ),

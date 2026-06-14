@@ -18,9 +18,20 @@ class Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (avatarEsUrl(avatar)) {
-      return CircleAvatar(
-        radius: tamano * 0.62,
-        backgroundImage: NetworkImage(avatar),
+      final lado = tamano * 1.24; // diámetro equivalente al radio 0.62·tamaño
+      return ClipOval(
+        child: Image.network(
+          avatar,
+          width: lado,
+          height: lado,
+          fit: BoxFit.cover,
+          // Si la foto no carga (sin red, URL expirada), muestra un icono en
+          // vez de romper o dejar un hueco oscuro.
+          errorBuilder: (_, __, ___) => CircleAvatar(
+            radius: tamano * 0.62,
+            child: Icon(Icons.person, size: tamano * 0.7),
+          ),
+        ),
       );
     }
     return Text(avatar, style: TextStyle(fontSize: tamano));
