@@ -1,0 +1,57 @@
+# Configuración de Dependabot — actualizaciones automáticas de dependencias.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # ── Cloud Functions (Node/TypeScript) ──────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/functions"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    assignees:
+      - "robertgon97"
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+
+  # ── App Flutter (Dart/pub) ─────────────────────────────────────────────────
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    assignees:
+      - "robertgon97"
+    # Los paquetes de Firebase publican versiones coordinadas el mismo día;
+    # agruparlos evita 5–8 PRs por ciclo.
+    groups:
+      firebase:
+        patterns:
+          - "firebase*"
+          - "cloud_firestore"
+          - "cloud_functions"
+          - "google_sign_in"
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+
+  # ── GitHub Actions (los workflows de .github/workflows) ────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    assignees:
+      - "robertgon97"
+    # Consolida todas las actions en un solo PR por ciclo (evita uno por cada
+    # action: checkout, cache, flutter-action, action-hosting-deploy, etc.).
+    groups:
+      acciones-ci:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "ci"
