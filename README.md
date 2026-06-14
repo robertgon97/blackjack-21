@@ -15,7 +15,7 @@ Disponible en **Android**, **Web**, **Windows** e **iOS**.
 | 4 | Social: amigos y transferencias | ✅ Completa |
 | 5 | Salas multijugador en tiempo real | ✅ Completa |
 | 6 | Observabilidad: Crashlytics + Analytics | ✅ Completa |
-| 7 | Endurecimiento del backend: App Check | 🔲 Pendiente |
+| 7 | Endurecimiento del backend: App Check | ✅ Completa (modo monitor) |
 | 8 | Perfil + estadísticas de juego | 🔲 Pendiente |
 | 9 | Progresión: niveles/XP + logros | 🔲 Pendiente |
 | 10 | Leaderboards + bono diario + misiones | 🔲 Pendiente |

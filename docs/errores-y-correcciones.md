@@ -301,3 +301,54 @@ Verificado: APK release reconstruido, instalado en un Galaxy A15 físico; `logca
 Crashlytics**, no solo la dependencia Flutter. Al activar minify, las dependencias que usan reflexión
 suelen necesitar configuración Gradle extra que en debug pasa desapercibida. Probar siempre el APK de
 release real (no solo debug) tras tocar cualquier cosa de Firebase/Gradle.
+
+---
+
+## 2026-06-14 — Pantalla negra (3.ª vez): `await` de App Check bloqueando `runApp`
+
+**Qué falló:** al añadir App Check (Fase 7), el APK de release volvía a arrancar en **pantalla negra**.
+El `logcat` mostraba el engine de Flutter cargando (Impeller/Vulkan) y `FirebaseApp initialization
+successful`, pero **sin ninguna excepción** y sin que la UI llegara a pintarse.
+
+**Causa:** en `main.dart` la activación se hizo con `await crearServicioAppCheck().activar()` **antes**
+de `runApp()`. El método `activar()` envuelve la llamada en `try-catch`, pero eso solo protege contra
+**excepciones**, no contra un **cuelgue**: la atestación de App Check (Play Integrity en un APK
+sideloaded, sin pasar por Play Store) no lanzaba ni retornaba, así que el `await` quedaba esperando para
+siempre y `runApp()` nunca se ejecutaba → pantalla negra. Es la misma familia de fallo que las dos
+anteriores: algo entre `Firebase.initializeApp()` y `runApp()` impide montar el árbol de widgets.
+
+**Corrección:** activar App Check **sin bloquear el arranque** —`unawaited(crearServicioAppCheck()
+.activar())` en `lib/main.dart` (con `import 'dart:async'`)—. En modo monitor las llamadas a Firebase
+no requieren todavía el token, así que activar en segundo plano es seguro; `activar()` sigue capturando
+sus propios errores. Verificado en el Galaxy A15: la pantalla de login renderiza y el modo demo
+(login anónimo + perfil en Firestore) entra al juego con saldo $1000.
+
+**Aprendizaje:** un servicio opcional de arranque (telemetría, App Check…) **nunca** debe ir en un
+`await` que preceda a `runApp()`: si se cuelga (no si lanza), bloquea el primer frame igual que una
+excepción. La regla es activar estos servicios *fire-and-forget* o con `timeout`, no solo envolverlos en
+`try-catch`. Sigue la misma lección de [pantalla negra] anteriores: nada entre `initializeApp` y
+`runApp` puede quedarse esperando indefinidamente.
+
+---
+
+## 2026-06-14 — Login con Google roto tras migrar a google_sign_in 7.x: faltaba `serverClientId`
+
+**Qué falló:** tras la migración a `google_sign_in 7.x`, el login con Google dejó de funcionar (Firebase
+rechazaba la credencial), mientras que el login anónimo y la app en general sí funcionaban.
+
+**Causa:** en 6.x el plugin de Android tomaba automáticamente el *Web client ID*
+(`default_web_client_id`) del `google-services.json` para emitir el `idToken`. En **7.x ya no**: hay que
+pasarlo explícitamente como `serverClientId` en `GoogleSignIn.instance.initialize(...)`. Sin él, el
+`idToken` llega **null**, y `GoogleAuthProvider.credential(idToken: null)` produce una credencial
+inválida que Firebase Auth rechaza.
+
+**Corrección:** en `firebase_auth_repository.dart`, `_initGoogle()` ahora llama
+`initialize(serverClientId: <web client_id>)` con el cliente OAuth de tipo 3 del `google-services.json`
+(es público, no secreto). Verificado en el Galaxy A15: el `logcat` muestra
+`FetchGoogleIdTokenCredentialOperation Operation succeeded` y `FirebaseAuth: Notifying auth state
+listeners about user (...)`, y el usuario confirma que el login con Google entra al juego.
+
+**Aprendizaje:** al migrar `google_sign_in` a 7.x, revisar SIEMPRE `initialize(serverClientId:)` en
+Android; el cambio de "lo lee de google-services.json" a "hay que pasarlo" es silencioso (compila bien,
+solo falla en runtime con `idToken` null). El síntoma típico es "el login con Google no funciona" sin un
+error obvio.

@@ -14,21 +14,66 @@ class FirebaseAuthRepository implements IAuthRepository {
   FirebaseAuthRepository({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
-    GoogleSignIn? googleSignIn,
     FirebaseFunctions? functions,
     IServicioTelemetria? telemetria,
   })  : _auth = auth ?? FirebaseAuth.instance,
         _db = firestore ?? FirebaseFirestore.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(),
         _functions = functions ??
             FirebaseFunctions.instanceFor(region: 'southamerica-east1'),
         _telemetria = telemetria ?? const NoopTelemetria();
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _db;
-  final GoogleSignIn _googleSignIn;
   final FirebaseFunctions _functions;
   final IServicioTelemetria _telemetria;
+
+  // google_sign_in 7.x usa un singleton (`GoogleSignIn.instance`) que debe
+  // inicializarse una sola vez antes de autenticar. Antes (6.x) se inyectaba
+  // una instancia; ahora se accede al singleton y se inicializa de forma lazy.
+  bool _googleListo = false;
+
+  // Web OAuth client ID (google-services.json, client_type 3). En 6.x el plugin
+  // de Android lo tomaba solo de google-services.json; en 7.x hay que pasarlo
+  // como serverClientId o el `idToken` sale NULL en Android y Firebase rechaza
+  // la credencial (es público, no es secreto).
+  static const _serverClientId =
+      '822375769128-871tqt5u135giud80tuqqadud0r17g0o.apps.googleusercontent.com';
+
+  Future<void> _initGoogle() async {
+    if (_googleListo) return;
+    await GoogleSignIn.instance.initialize(serverClientId: _serverClientId);
+    _googleListo = true;
+  }
+
+  /// Abre el selector de Google y devuelve una credencial lista para Firebase.
+  ///
+  /// En 7.x el flujo interactivo (`authenticate`) no está soportado en todas las
+  /// plataformas (p. ej. web requiere un botón renderizado): si no se soporta,
+  /// se lanza un mensaje claro. La cancelación del usuario llega como
+  /// [GoogleSignInException] con código `canceled`. Para Firebase basta el
+  /// `idToken` (el `accessToken` ya no viene en `authentication`).
+  Future<AuthCredential> _credencialGoogle() async {
+    final google = GoogleSignIn.instance;
+    if (!google.supportsAuthenticate()) {
+      throw Exception(
+        'El inicio con Google no está disponible en esta plataforma. '
+        'Usa email y contraseña.',
+      );
+    }
+    await _initGoogle();
+    final GoogleSignInAccount cuenta;
+    try {
+      cuenta = await google.authenticate();
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        throw Exception('Login con Google cancelado');
+      }
+      rethrow;
+    }
+    return GoogleAuthProvider.credential(
+      idToken: cuenta.authentication.idToken,
+    );
+  }
 
   @override
   Stream<PerfilUsuario?> get perfilStream {
@@ -91,17 +136,11 @@ class FirebaseAuthRepository implements IAuthRepository {
 
   @override
   Future<PerfilUsuario> entrarConGoogle() async {
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) throw Exception('Login con Google cancelado');
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
+    final credential = await _credencialGoogle();
     final cred = await _auth.signInWithCredential(credential);
     return _fetchOCrearPerfil(
       cred.user!,
-      displayName: googleUser.displayName ?? 'Jugador',
+      displayName: cred.user!.displayName ?? 'Jugador',
     );
   }
 
@@ -144,23 +183,19 @@ class FirebaseAuthRepository implements IAuthRepository {
     if (user == null) throw Exception('No hay sesión activa para convertir.');
     final UserCredential cred;
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        throw Exception('Vinculación con Google cancelada.');
-      }
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+      final credential = await _credencialGoogle();
       cred = await user.linkWithCredential(credential);
     } on FirebaseAuthException catch (e) {
       throw Exception(_mensajeVinculacion(e.code));
     } catch (e) {
-      // google_sign_in puede lanzar PlatformException (Play Services caído, sin
-      // red, OAuth mal configurado) que no es FirebaseAuthException. La
-      // cancelación del usuario ya se relanza con su propio mensaje.
-      if (e.toString().contains('cancelada')) rethrow;
+      // google_sign_in puede lanzar GoogleSignInException (Play Services caído,
+      // sin red, OAuth mal configurado) que no es FirebaseAuthException. La
+      // cancelación del usuario y la plataforma no soportada ya se relanzan con
+      // su propio mensaje desde _credencialGoogle.
+      if (e.toString().contains('cancelado') ||
+          e.toString().contains('no está disponible')) {
+        rethrow;
+      }
       throw Exception('No se pudo conectar con Google. Intenta de nuevo.');
     }
     // Cuenta ya permanente. Se copian nombre/avatar de Google al perfil dentro
@@ -176,7 +211,13 @@ class FirebaseAuthRepository implements IAuthRepository {
 
   @override
   Future<void> salir() async {
-    await _googleSignIn.signOut();
+    // El signOut de Google no debe impedir cerrar la sesión de Firebase.
+    try {
+      await _initGoogle();
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      debugPrint('Salir: no se pudo cerrar sesión de Google: $e');
+    }
     await _auth.signOut();
   }
 
