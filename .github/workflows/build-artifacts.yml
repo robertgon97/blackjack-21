@@ -51,8 +51,19 @@ jobs:
           storeFile=$HOME/upload-keystore.jks
           EOF
 
+      # Versión para App Distribution: el versionName sale del pubspec.yaml (la
+      # versión declarada en el repo) y el versionCode del número de ejecución
+      # (entero siempre creciente). Sin esto el APK toma el default de pubspec
+      # (1.0.0+1) en cada push y todas las builds aparecen iguales en Firebase. (#27)
+      - name: Derivar versión del pubspec
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | head -1 | sed -E 's/^version: *//; s/\+.*//')
+          [ -n "$VERSION" ] || { echo "ERROR: no se encontró 'version:' en pubspec.yaml"; exit 1; }
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Build APK firmado (App Distribution)
-        run: flutter build apk --release
+        run: flutter build apk --release --build-name="${{ steps.version.outputs.name }}" --build-number=${{ github.run_number }}
 
       - uses: google-github-actions/auth@v2
         with:
@@ -62,15 +73,20 @@ jobs:
         run: npm install -g firebase-tools@13
 
       - name: Distribuir APK firmado a App Distribution
+        # La distribución a testers es un beneficio adicional; si Firebase falla
+        # (servicio caído, cuota…), no debe tumbar el job ni el artefacto ya subido.
+        continue-on-error: true
         env:
           COMMIT_SHA: ${{ github.sha }}
           BRANCH: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.name }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           firebase appdistribution:distribute \
             build/app/outputs/flutter-apk/app-release.apk \
             --app 1:822375769128:android:adc9972274f9770c92011d \
             --groups "testers-internos" \
-            --release-notes "${BRANCH} · ${COMMIT_SHA:0:7}" \
+            --release-notes "v${VERSION} (build ${BUILD_NUMBER}) · ${BRANCH} · ${COMMIT_SHA:0:7}" \
             --project blackjack-21-app
 
   windows:
