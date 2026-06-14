@@ -62,6 +62,7 @@ class BlackjackApp extends ConsumerWidget {
             content:
                 Text('${logro.emoji}  ¡Logro desbloqueado: ${logro.nombre}!'),
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 6),
           ),
         );
       }
