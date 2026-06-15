@@ -19,10 +19,11 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="App multiplataforma de Blackjack 21 con multijugador en tiempo real.">
+  <meta name="theme-color" content="#0B6E3B">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Blackjack 21">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
@@ -31,16 +32,54 @@
 
   <title>Blackjack 21</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Pantalla de carga mientras se descarga el bundle de Flutter (evita el
+       blanco inicial). Se elimina al primer frame de Flutter. */
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #11603a, #0a2c1c);
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #fff;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    #loading .logo { font-size: 72px; line-height: 1; }
+    #loading .titulo { margin-top: 16px; font-size: 22px; font-weight: 700; }
+    #loading .spinner {
+      margin-top: 28px;
+      width: 38px;
+      height: 38px;
+      border: 4px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: girar 0.9s linear infinite;
+    }
+    @keyframes girar { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="loading">
+    <div class="logo">🃏</div>
+    <div class="titulo">Blackjack 21</div>
+    <div class="spinner"></div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Oculta la pantalla de carga cuando Flutter pinta su primer frame.
+    window.addEventListener('flutter-first-frame', function () {
+      var loading = document.getElementById('loading');
+      if (loading) {
+        loading.style.opacity = '0';
+        setTimeout(function () { loading.remove(); }, 300);
+      }
+    });
+  </script>
 </body>
 </html>
