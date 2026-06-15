@@ -692,7 +692,10 @@ class ControladorJuego extends Notifier<EstadoJuego> {
   Future<void> verAnuncio() async {
     if (state.animando || state.fase != FaseJuego.resultado) return;
     final uid = ref.read(perfilStreamProvider).valueOrNull?.uid;
-    if (uid == null) return;
+    if (uid == null) {
+      _avisar('Cargando tu perfil… intenta de nuevo en un momento.');
+      return;
+    }
 
     final vio =
         await ref.read(servicioAnunciosProvider).mostrarRecompensado(uid);

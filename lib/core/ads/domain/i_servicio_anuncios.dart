@@ -1,4 +1,4 @@
-/// Servicio de anuncios (AdMob). Abstrae el proveedor y la guarda de plataforma
+/// Servicio de anuncios. Abstrae el proveedor y la guarda de plataforma
 /// —igual que telemetría/App Check/push— para que la UI solo pregunte si hay
 /// anuncios disponibles y pida mostrar uno recompensado.
 abstract interface class IServicioAnuncios {
@@ -13,8 +13,8 @@ abstract interface class IServicioAnuncios {
   /// `true` si el usuario lo vio completo; `false` si no se pudo cargar, se
   /// cerró antes, o la plataforma no soporta anuncios.
   ///
-  /// La **acreditación NO la hace el cliente**: AdMob notifica a la Cloud
-  /// Function `admobSsv` con la verificación firmada (SSV), que acredita los
-  /// créditos al [uid]. Por eso el `uid` viaja como `userId` del anuncio.
+  /// La **acreditación NO la hace el cliente**: el backend verifica el anuncio
+  /// server-side y acredita los créditos al [uid]. Por eso el `uid` se asocia
+  /// al anuncio (detalle del proveedor en la capa `data`).
   Future<bool> mostrarRecompensado(String uid);
 }

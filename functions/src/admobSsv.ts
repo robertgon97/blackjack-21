@@ -48,6 +48,11 @@ export const admobSsv = onRequest(
   { region: 'southamerica-east1' },
   async (req, res) => {
     try {
+      // AdMob siempre llama por GET; rechazar otros verbos reduce superficie.
+      if (req.method !== 'GET') {
+        res.status(405).send('method not allowed');
+        return;
+      }
       const query = req.url.includes('?') ? req.url.split('?')[1] : '';
       // El contenido firmado es todo lo anterior a `&signature=`.
       const sigIdx = query.indexOf('&signature=');
@@ -89,12 +94,15 @@ export const admobSsv = onRequest(
       const db = getFirestore();
       const userRef = db.collection('users').doc(userId);
       const rewardRef = userRef.collection('adRewards').doc(txId);
-      await db.runTransaction(async (tx) => {
+      const resultado = await db.runTransaction(async (tx) => {
         const [userSnap, rewSnap] = await Promise.all([
           tx.get(userRef),
           tx.get(rewardRef),
         ]);
-        if (rewSnap.exists || !userSnap.exists) return; // ya procesado o sin perfil
+        if (rewSnap.exists) return 'ya-procesado';
+        // Sin perfil: NO acreditar y NO responder 200 (si no, AdMob no reintenta
+        // y el usuario perdería la recompensa de un anuncio que sí vio).
+        if (!userSnap.exists) return 'sin-perfil';
         const bal =
           typeof userSnap.data()!['balance'] === 'number'
             ? (userSnap.data()!['balance'] as number)
@@ -115,8 +123,15 @@ export const admobSsv = onRequest(
           description: 'Recompensa por anuncio',
           createdAt: FieldValue.serverTimestamp(),
         });
+        return 'acreditado';
       });
 
+      if (resultado === 'sin-perfil') {
+        // 503: error transitorio → AdMob reintentará (el perfil podría existir luego).
+        console.warn(`admobSsv: perfil ${userId} no existe; pido reintento`);
+        res.status(503).send('user not found');
+        return;
+      }
       res.status(200).send('ok');
     } catch (e) {
       console.error('admobSsv error:', e);
