@@ -19,7 +19,7 @@ Disponible en **Android**, **Web**, **Windows** e **iOS**.
 | 8 | Perfil + estadísticas de juego | ✅ Completa |
 | 9 | Progresión: niveles/XP + logros | ✅ Completa |
 | 10 | Leaderboards + bono diario + misiones | ✅ Completa |
-| 11 | Monetización y pulido (anuncios, PWA, push) | 🔲 Pendiente |
+| 11 | Monetización y pulido (anuncios, PWA, push) | 🚧 En curso (11a PWA) |
 | 12 | Remote Config + A/B Testing | 🔲 Pendiente |
 | 13 | Comunicación en sala (chat + voz + cámara) | 🔲 Pendiente |
 | 14 | Distribución: App Distribution + Test Lab | 🔲 Pendiente |

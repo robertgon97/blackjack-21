@@ -180,9 +180,10 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > - [#56](https://github.com/robertgon97/blackjack-21/issues/56) — Migrar modelos a `freezed` + `json_serializable`.
 > - [#57](https://github.com/robertgon97/blackjack-21/issues/57) — Providers de Riverpod + ficha de feature de `comms`.
 
-- **Fase 11 (siguiente):** monetización y pulido (anuncios, PWA, push). Hoja de ruta en
-  [`docs/plans/01-firebase-observabilidad-y-crecimiento.md`](docs/plans/01-firebase-observabilidad-y-crecimiento.md)
-  y [`docs/plans/00-app-multiplataforma.md`](docs/plans/00-app-multiplataforma.md).
+- **Fase 11 (en curso):** monetización y pulido, en sub-PRs. ✅ **11a** PWA (web instalable + pantalla de
+  carga con marca en `web/`, ficha [`docs/features/pwa.md`](docs/features/pwa.md)). Pendientes: **11b**
+  push (FCM) y **11c** anuncios (AdMob, con IDs de prueba hasta tener cuenta). Hoja de ruta en
+  [`docs/plans/00-app-multiplataforma.md`](docs/plans/00-app-multiplataforma.md).
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su
 > controlador Riverpod (`features/game/presentation/`). Ficha:
