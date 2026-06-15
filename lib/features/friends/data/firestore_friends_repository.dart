@@ -36,10 +36,10 @@ class FirestoreFriendsRepository implements IFriendsRepository {
 
   @override
   Future<ResultadoBusqueda?> buscarPorCodigo(String inviteCode) async {
-    // Normaliza para tolerar minúsculas, espacios y la falta del guion: el
-    // usuario suele teclear "BJAB12" en vez de "BJ-AB12" (issue #62).
     final code = normalizarCodigoInvitacion(inviteCode);
-    if (code.isEmpty) return null;
+    // Un código canónico es "BJ-XXXX" (7 caracteres); algo más corto no puede
+    // existir, así que se evita la lectura a Firestore.
+    if (code.length < 7) return null;
     final doc = await _db.collection('invite_codes').doc(code).get();
     if (!doc.exists) return null;
     final d = doc.data()!;

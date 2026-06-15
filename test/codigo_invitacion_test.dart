@@ -1,5 +1,5 @@
-// Test de la normalización del código de invitación (friends/domain). Tolera el
-// formato que teclea el usuario (sin guion, minúsculas, espacios) — issue #62.
+// Tests de la normalización del código de invitación (friends/domain): tolera el
+// formato que teclea el usuario (sin guion, minúsculas, espacios).
 
 import 'package:blackjack_21/features/friends/domain/codigo_invitacion.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +28,12 @@ void main() {
     test('entrada que no es un código BJ no se fuerza al formato', () {
       // No empieza por BJ → solo se limpia (no coincidirá con ningún código).
       expect(normalizarCodigoInvitacion('ABCD'), 'ABCD');
+    });
+
+    test('solo el prefijo "BJ" no se completa (queda corto)', () {
+      // < 7 chars: buscarPorCodigo lo descarta sin leer Firestore.
+      expect(normalizarCodigoInvitacion('BJ'), 'BJ');
+      expect(normalizarCodigoInvitacion('BJ').length, lessThan(7));
     });
   });
 }
