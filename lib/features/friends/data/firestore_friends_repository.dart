@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../core/telemetria/data/noop_telemetria.dart';
 import '../../../core/telemetria/domain/i_servicio_telemetria.dart';
+import '../domain/codigo_invitacion.dart';
 import '../domain/contacto.dart';
 import '../domain/i_friends_repository.dart';
 import '../domain/resultado_busqueda.dart';
@@ -35,8 +36,10 @@ class FirestoreFriendsRepository implements IFriendsRepository {
 
   @override
   Future<ResultadoBusqueda?> buscarPorCodigo(String inviteCode) async {
-    final code = inviteCode.trim().toUpperCase();
-    if (code.isEmpty) return null;
+    final code = normalizarCodigoInvitacion(inviteCode);
+    // Un código canónico es "BJ-XXXX" (7 caracteres); algo más corto no puede
+    // existir, así que se evita la lectura a Firestore.
+    if (code.length < 7) return null;
     final doc = await _db.collection('invite_codes').doc(code).get();
     if (!doc.exists) return null;
     final d = doc.data()!;
