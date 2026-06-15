@@ -8,20 +8,30 @@ const MONTO = 200; // créditos por anuncio recompensado verificado
 const URL_CLAVES = 'https://www.gstatic.com/admob/reward/verifier-keys.json';
 let cacheClaves: Record<string, string> | null = null;
 let cacheTs = 0;
+// Singleflight: si dos peticiones llegan en cold-start, comparten un solo fetch.
+let cargaEnCurso: Promise<Record<string, string>> | null = null;
 
 async function obtenerClaves(): Promise<Record<string, string>> {
   if (cacheClaves && Date.now() - cacheTs < 24 * 60 * 60 * 1000) {
     return cacheClaves;
   }
-  const res = await fetch(URL_CLAVES);
-  const data = (await res.json()) as {
-    keys: Array<{ keyId: number; pem: string }>;
-  };
-  const map: Record<string, string> = {};
-  for (const k of data.keys) map[String(k.keyId)] = k.pem;
-  cacheClaves = map;
-  cacheTs = Date.now();
-  return map;
+  if (cargaEnCurso) return cargaEnCurso;
+  cargaEnCurso = (async () => {
+    const res = await fetch(URL_CLAVES);
+    const data = (await res.json()) as {
+      keys: Array<{ keyId: number; pem: string }>;
+    };
+    const map: Record<string, string> = {};
+    for (const k of data.keys) map[String(k.keyId)] = k.pem;
+    cacheClaves = map;
+    cacheTs = Date.now();
+    return map;
+  })();
+  try {
+    return await cargaEnCurso;
+  } finally {
+    cargaEnCurso = null;
+  }
 }
 
 /**

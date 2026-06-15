@@ -18,15 +18,21 @@ class MobileAdsService implements IServicioAnuncios {
       defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS;
 
+  // IDs de prueba oficiales de Google (no generan ingresos ni baneo).
+  static const _pruebaAndroid = 'ca-app-pub-3940256099942544/5224354917';
+  static const _pruebaIos = 'ca-app-pub-3940256099942544/1712485313';
+
   /// Ad Unit recompensado: prueba en debug, real en release.
+  ///
+  /// iOS aún no tiene Ad Unit propio (falta la cuenta/firma de Apple): usar el
+  /// de Android en iOS provoca errores de carga y puede marcar la cuenta AdMob,
+  /// así que en iOS se devuelve el de **prueba** incluso en release hasta tenerlo.
   static String get _adUnitId {
+    final esIos = defaultTargetPlatform == TargetPlatform.iOS;
     if (kDebugMode) {
-      // IDs de prueba oficiales de Google (no generan ingresos ni baneo).
-      return defaultTargetPlatform == TargetPlatform.iOS
-          ? 'ca-app-pub-3940256099942544/1712485313'
-          : 'ca-app-pub-3940256099942544/5224354917';
+      return esIos ? _pruebaIos : _pruebaAndroid;
     }
-    // Producción (Android). El de iOS se añadirá con su cuenta/firma.
+    if (esIos) return _pruebaIos;
     return 'ca-app-pub-4615188161032989/7079919403';
   }
 

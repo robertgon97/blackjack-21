@@ -21,6 +21,11 @@ sobre todo cuando se queda sin saldo en el modo solo.
   por `transaction_id` (`users/{uid}/adRewards/{txId}`). El saldo llega al cliente por `saldoProvider`.
   - Así se **certifica criptográficamente** que el anuncio se vio: un cliente modificado no puede
     falsificar la firma de Google.
+- **Sin cooldown server-side (a propósito):** con SSV cada recompensa equivale a un anuncio
+  **realmente visto** (firmado por Google) que genera ingreso publicitario real, así que `N × 200`
+  por `N` anuncios vistos es el comportamiento previsto. Un cooldown en `admobSsv` rechazaría
+  recompensas legítimas. La frecuencia (cuántos anuncios por hora se ofrecen) se limita, si hace
+  falta, con el **frequency capping de la consola de AdMob**, no en el servidor.
 
 ## Arquitectura
 

@@ -184,9 +184,10 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
   carga con marca en `web/`, [`docs/features/pwa.md`](docs/features/pwa.md)). ✅ **11b** push FCM
   (`core/push/` mismo patrón que telemetría; `playerAction` notifica logros desbloqueados; Android listo,
   Web con VAPID key, iOS diferido; [`docs/features/push.md`](docs/features/push.md)). ✅ **11c** anuncios
-  recompensados (AdMob; `core/ads/` con **conditional imports** porque el SDK no es web; `claimAdReward`
-  acredita server-side con cooldown; IDs de prueba en debug, reales en release; solo Android/iOS;
-  [`docs/features/anuncios.md`](docs/features/anuncios.md)).
+  recompensados (AdMob; `core/ads/` con **conditional imports** porque el SDK no es web; recompensa
+  verificada **server-side por SSV** — AdMob llama a la Function `admobSsv`, que valida la firma ECDSA
+  de Google y acredita idempotente; el cliente no acredita; IDs de prueba en debug, reales en release;
+  solo Android/iOS; [`docs/features/anuncios.md`](docs/features/anuncios.md)).
 - **Fase 12 (siguiente):** Remote Config + A/B Testing. Hoja de ruta en
   [`docs/plans/01-firebase-observabilidad-y-crecimiento.md`](docs/plans/01-firebase-observabilidad-y-crecimiento.md).
 

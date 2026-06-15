@@ -697,7 +697,9 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     final vio =
         await ref.read(servicioAnunciosProvider).mostrarRecompensado(uid);
     if (!vio) {
-      _avisar('No hay anuncio disponible ahora. Intenta más tarde.');
+      // Cubre dos casos: el anuncio no cargó, o se cerró antes de completarlo.
+      // En ambos no hay recompensa (AdMob no dispara el SSV).
+      _avisar('No se completó el anuncio, así que no hay recompensa.');
       return;
     }
     // La recompensa la acredita AdMob → Cloud Function `admobSsv` (server-side,
