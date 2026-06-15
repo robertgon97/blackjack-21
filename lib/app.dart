@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,7 +41,8 @@ class BlackjackApp extends ConsumerWidget {
         t.setPropiedad('tipo_cuenta', tipo);
         t.setClave('tipo_cuenta', tipo);
         // Inicializa el push para este usuario (idempotente; no-op en Windows).
-        ref.read(servicioPushProvider).inicializar(perfil.uid);
+        // Fire-and-forget: no bloquea el listener (el servicio nunca lanza).
+        unawaited(ref.read(servicioPushProvider).inicializar(perfil.uid));
       }
     });
 

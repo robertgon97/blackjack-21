@@ -43,8 +43,11 @@ class FirebasePushService implements IServicioPush {
       // Se cancela la suscripción anterior (de otro uid) para no escribir en el
       // documento equivocado tras un cambio de sesión.
       await _tokenRefreshSub?.cancel();
-      _tokenRefreshSub =
-          _messaging.onTokenRefresh.listen((t) => _guardarToken(uid, t));
+      _tokenRefreshSub = _messaging.onTokenRefresh.listen(
+        (t) => _guardarToken(uid, t).catchError(
+          (Object e) => debugPrint('push: no se pudo guardar token rotado: $e'),
+        ),
+      );
     } catch (e) {
       _uidInicializado = null; // permite reintentar en la próxima emisión
       debugPrint('push: inicialización falló (no fatal): $e');
