@@ -23,7 +23,7 @@
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Blackjack 21">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
@@ -74,12 +74,12 @@
   <script>
     // Oculta la pantalla de carga cuando Flutter pinta su primer frame.
     window.addEventListener('flutter-first-frame', function () {
-      var loading = document.getElementById('loading');
+      const loading = document.getElementById('loading');
       if (loading) {
         loading.style.opacity = '0';
         setTimeout(function () { loading.remove(); }, 300);
       }
-    });
+    }, { once: true });
   </script>
 </body>
 </html>
