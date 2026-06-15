@@ -10,3 +10,4 @@ export { resolveSoloRound } from './soloRound';
 export { claimDailyBonus } from './dailyBonus';
 export { purgarLeaderboards } from './leaderboard';
 export { claimMission } from './misiones';
+export { admobSsv } from './admobSsv';

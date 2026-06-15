@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ads/ads_provider.dart';
 import '../../../core/theme/temas.dart';
 import '../../../core/utils/formato.dart';
 import '../../auth/presentation/widgets/banner_conversion.dart';
@@ -205,14 +206,20 @@ class _PanelControl extends ConsumerWidget {
         );
       case FaseJuego.resultado:
         if (estado.sinDinero) {
-          return FilledButton.icon(
-            onPressed: () => ctrl.pedirPrestamo(),
-            style: FilledButton.styleFrom(
-              backgroundColor: acento,
-              foregroundColor: Colors.black,
-            ),
-            icon: const Icon(Icons.card_giftcard),
-            label: const Text('Reclamar bono diario (\$500)'),
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FilledButton.icon(
+                onPressed: () => ctrl.pedirPrestamo(),
+                style: FilledButton.styleFrom(
+                  backgroundColor: acento,
+                  foregroundColor: Colors.black,
+                ),
+                icon: const Icon(Icons.card_giftcard),
+                label: const Text('Reclamar bono diario'),
+              ),
+              _BotonAnuncio(ctrl),
+            ],
           );
         }
         return FilledButton.icon(
@@ -228,5 +235,29 @@ class _PanelControl extends ConsumerWidget {
           label: const Text('NUEVA MANO'),
         );
     }
+  }
+}
+
+/// Botón "ver anuncio para créditos" (Fase 11c). Solo se renderiza cuando el
+/// servicio de anuncios está disponible (Android/iOS); en Web/escritorio
+/// devuelve un widget vacío.
+class _BotonAnuncio extends ConsumerWidget {
+  const _BotonAnuncio(this.ctrl);
+
+  final ControladorJuego ctrl;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(servicioAnunciosProvider).disponible) {
+      return const SizedBox.shrink();
+    }
+    return TextButton.icon(
+      onPressed: () => unawaited(ctrl.verAnuncio()),
+      icon: const Icon(Icons.ondemand_video, color: Colors.white70),
+      label: const Text(
+        'Ver anuncio (+créditos)',
+        style: TextStyle(color: Colors.white70),
+      ),
+    );
   }
 }

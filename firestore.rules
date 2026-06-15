@@ -76,6 +76,13 @@ service cloud.firestore {
         allow read: if esDueno(uid);
         allow write: if false;
       }
+
+      // Recompensas de anuncios procesadas (Fase 11c): idempotencia del SSV de
+      // AdMob (un doc por transaction_id). Lo escribe `admobSsv` (Admin SDK).
+      match /adRewards/{txId} {
+        allow read: if esDueno(uid);
+        allow write: if false;
+      }
     }
 
     // ---------- invite_codes ----------
