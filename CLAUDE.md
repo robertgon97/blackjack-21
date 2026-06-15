@@ -181,8 +181,10 @@ Para forzar cartas concretas, usa `Shoe(n, random: Random(semilla))`.
 > - [#57](https://github.com/robertgon97/blackjack-21/issues/57) — Providers de Riverpod + ficha de feature de `comms`.
 
 - **Fase 11 (en curso):** monetización y pulido, en sub-PRs. ✅ **11a** PWA (web instalable + pantalla de
-  carga con marca en `web/`, ficha [`docs/features/pwa.md`](docs/features/pwa.md)). Pendientes: **11b**
-  push (FCM) y **11c** anuncios (AdMob, con IDs de prueba hasta tener cuenta). Hoja de ruta en
+  carga con marca en `web/`, [`docs/features/pwa.md`](docs/features/pwa.md)). ✅ **11b** push FCM
+  (`core/push/` mismo patrón que telemetría; `playerAction` notifica logros desbloqueados; Android listo,
+  Web con VAPID key, iOS diferido; [`docs/features/push.md`](docs/features/push.md)). Pendiente: **11c**
+  anuncios (AdMob, con IDs de prueba hasta tener cuenta). Hoja de ruta en
   [`docs/plans/00-app-multiplataforma.md`](docs/plans/00-app-multiplataforma.md).
 
 > **Hecho en Fase 2:** las 4 paletas (`core/theme/temas.dart`) y la UI del juego solo con su

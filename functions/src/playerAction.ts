@@ -1,5 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 import {
   Carta,
   EstadisticasJugador,
@@ -10,7 +11,7 @@ import {
   debePedirCrupier,
   resolverMano,
 } from './blackjack';
-import { evaluarLogros } from './logros';
+import { evaluarLogros, nombreLogro } from './logros';
 import { idDiaUtc, idSemanaIso } from './semana';
 
 interface DatosJugador {
@@ -54,7 +55,12 @@ export const playerAction = onCall(
     const db = getFirestore();
     const roomRef = db.collection('rooms').doc(roomId as string);
 
+    // Push a enviar TRAS la transacción (no se hace I/O externo dentro de la tx).
+    // Se rellena en cada intento; al reintentar la tx se reinicia para no duplicar.
+    let pushLogros: Array<{ tokens: string[]; logros: string[] }> = [];
+
     await db.runTransaction(async (tx) => {
+      pushLogros = [];
       // ── FASE 1: TODOS LOS READS ───────────────────────────────────────────
 
       const roomDoc = await tx.get(roomRef);
@@ -374,6 +380,12 @@ export const playerAction = onCall(
         const userUpdate: Record<string, unknown> = { balance: newBalance, stats };
         if (logrosNuevos.length > 0) {
           userUpdate['logros'] = FieldValue.arrayUnion(...logrosNuevos);
+          // Recoger los tokens del usuario para notificarle el logro tras commit.
+          const tokensRaw = userDataMap[pUid]?.['fcmTokens'];
+          const tokens = Array.isArray(tokensRaw) ? (tokensRaw as string[]) : [];
+          if (tokens.length > 0) {
+            pushLogros.push({ tokens, logros: logrosNuevos });
+          }
         }
 
         tx.update(userRef, userUpdate);
@@ -424,6 +436,23 @@ export const playerAction = onCall(
 
       tx.update(roomRef, roomUpdate);
     });
+
+    // Notificaciones push de logros (Fase 11b), fuera de la transacción. Un fallo
+    // de envío no debe afectar al resultado de la ronda (ya persistida). Se
+    // envían en paralelo para no encadenar la latencia con varios jugadores.
+    await Promise.all(
+      pushLogros.map(({ tokens, logros }) => {
+        const cuerpo = logros.length === 1
+          ? nombreLogro(logros[0])
+          : `Desbloqueaste ${logros.length} logros nuevos`;
+        return getMessaging()
+          .sendEachForMulticast({
+            tokens,
+            notification: { title: '¡Logro desbloqueado!', body: cuerpo },
+          })
+          .catch((e) => console.error('No se pudo enviar push de logro:', e));
+      }),
+    );
 
     return { success: true };
   },

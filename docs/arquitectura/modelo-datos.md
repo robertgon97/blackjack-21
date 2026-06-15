@@ -22,6 +22,7 @@ El documento de perfil de cada usuario. El `uid` es el de Firebase Auth.
 | `lastDailyBonus` | timestamp | 🔒 Último reclamo del bono diario (`claimDailyBonus`) |
 | `lastDailyBonusDay` | string | 🔒 (Fase 10b) Día del último bono diario (`YYYY-MM-DD` UTC), base de la racha |
 | `dailyStreak` | int | 🔒 (Fase 10b) Racha de días consecutivos reclamando el bono |
+| `fcmTokens` | array&lt;string&gt; | (Fase 11b) Tokens FCM de los dispositivos del usuario; lo escribe el dueño, las Functions lo leen para enviar push |
 | `createdAt` | timestamp | Fecha de creación |
 | `lastSeen` | timestamp | Última actividad (presencia) |
 
