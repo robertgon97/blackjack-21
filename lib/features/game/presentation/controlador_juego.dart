@@ -11,7 +11,9 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ads/ads_provider.dart';
 import '../../../core/telemetria/telemetria_provider.dart';
+import '../../auth/presentation/auth_provider.dart';
 import '../../wallet/presentation/wallet_provider.dart';
 import '../domain/cartas.dart';
 import '../domain/estrategia.dart';
@@ -682,5 +684,26 @@ class ControladorJuego extends Notifier<EstadoJuego> {
             : 'No se pudo reclamar el bono.',
       );
     }
+  }
+
+  /// Muestra un anuncio recompensado y, si el usuario lo ve completo, acredita
+  /// la recompensa server-side (Fase 11c). Solo tiene efecto en plataformas con
+  /// anuncios (Android/iOS); en el resto el servicio es no-op.
+  Future<void> verAnuncio() async {
+    if (state.animando || state.fase != FaseJuego.resultado) return;
+    final uid = ref.read(perfilStreamProvider).valueOrNull?.uid;
+    if (uid == null) return;
+
+    final vio =
+        await ref.read(servicioAnunciosProvider).mostrarRecompensado(uid);
+    if (!vio) {
+      _avisar('No hay anuncio disponible ahora. Intenta más tarde.');
+      return;
+    }
+    // La recompensa la acredita AdMob → Cloud Function `admobSsv` (server-side,
+    // verificado). El saldo llega por `saldoProvider`; pasamos a apuestas para
+    // que se sincronice en cuanto se acredite (unos segundos).
+    _avisar('¡Gracias! Tu recompensa llegará en unos segundos.');
+    nuevaRonda();
   }
 }

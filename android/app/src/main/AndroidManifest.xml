@@ -30,6 +30,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- AdMob App ID (Fase 11c). Es público (no secreto). Los anuncios usan
+             el Ad Unit de prueba en debug y el real en release (ver
+             core/ads/data/mobile_ads_service.dart). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4615188161032989~8584572764" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

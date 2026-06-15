@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/ads/ads_factory_stub.dart'
+    if (dart.library.io) 'core/ads/ads_factory_io.dart';
 import 'core/app_check/app_check_provider.dart';
 import 'firebase_options.dart';
 
@@ -20,6 +22,10 @@ void main() async {
   // negra. En modo monitor las llamadas no requieren el token todavía, así que
   // activar en segundo plano es seguro. `activar()` captura sus propios errores.
   unawaited(crearServicioAppCheck().activar());
+
+  // Anuncios (AdMob): inicializa el SDK en segundo plano. No-op fuera de
+  // Android/iOS; `inicializar()` captura sus propios errores.
+  unawaited(crearServicioAnuncios().inicializar());
 
   // Engancha los errores de Flutter y de Dart a Crashlytics.
   // Solo en plataformas soportadas: no funciona en Web, Windows ni Linux.
