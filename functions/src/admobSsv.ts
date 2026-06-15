@@ -17,7 +17,12 @@ async function obtenerClaves(): Promise<Record<string, string>> {
   }
   if (cargaEnCurso) return cargaEnCurso;
   cargaEnCurso = (async () => {
-    const res = await fetch(URL_CLAVES);
+    // Timeout para no colgar la Function (ni la petición de AdMob) si gstatic
+    // tarda; AdMob reintentará el SSV ante el 500 resultante.
+    const res = await fetch(URL_CLAVES, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) {
+      throw new Error(`verifier-keys HTTP ${res.status}`);
+    }
     const data = (await res.json()) as {
       keys: Array<{ keyId: number; pem: string }>;
     };

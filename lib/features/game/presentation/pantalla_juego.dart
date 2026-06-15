@@ -238,8 +238,9 @@ class _PanelControl extends ConsumerWidget {
   }
 }
 
-/// Botón "ver anuncio para créditos" (Fase 11c). Se oculta solo en las
-/// plataformas sin anuncios (Web/escritorio).
+/// Botón "ver anuncio para créditos" (Fase 11c). Solo se renderiza cuando el
+/// servicio de anuncios está disponible (Android/iOS); en Web/escritorio
+/// devuelve un widget vacío.
 class _BotonAnuncio extends ConsumerWidget {
   const _BotonAnuncio(this.ctrl);
 
