@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +17,10 @@ class FirebasePushService implements IServicioPush {
 
   /// `uid` para el que ya se inicializó (evita repetir el trabajo).
   String? _uidInicializado;
+
+  /// Suscripción a la rotación del token; se cancela al cambiar de usuario para
+  /// no escribir el token nuevo en el documento del usuario anterior.
+  StreamSubscription<String>? _tokenRefreshSub;
 
   /// Clave pública VAPID para **Web Push** (consola Firebase → Cloud Messaging →
   /// Certificados push web). Es pública, no secreta (igual que el serverClientId
@@ -34,7 +40,11 @@ class FirebasePushService implements IServicioPush {
       if (token != null) await _guardarToken(uid, token);
 
       // Si el token rota, se vuelve a guardar para no perder el canal de envío.
-      _messaging.onTokenRefresh.listen((t) => _guardarToken(uid, t));
+      // Se cancela la suscripción anterior (de otro uid) para no escribir en el
+      // documento equivocado tras un cambio de sesión.
+      await _tokenRefreshSub?.cancel();
+      _tokenRefreshSub =
+          _messaging.onTokenRefresh.listen((t) => _guardarToken(uid, t));
     } catch (e) {
       _uidInicializado = null; // permite reintentar en la próxima emisión
       debugPrint('push: inicialización falló (no fatal): $e');

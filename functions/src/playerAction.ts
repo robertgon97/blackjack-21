@@ -438,21 +438,21 @@ export const playerAction = onCall(
     });
 
     // Notificaciones push de logros (Fase 11b), fuera de la transacción. Un fallo
-    // de envío no debe afectar al resultado de la ronda (ya persistida).
-    for (const { tokens, logros } of pushLogros) {
-      const titulo = '¡Logro desbloqueado!';
-      const cuerpo = logros.length === 1
-        ? nombreLogro(logros[0])
-        : `Desbloqueaste ${logros.length} logros nuevos`;
-      try {
-        await getMessaging().sendEachForMulticast({
-          tokens,
-          notification: { title: titulo, body: cuerpo },
-        });
-      } catch (e) {
-        console.error('No se pudo enviar push de logro:', e);
-      }
-    }
+    // de envío no debe afectar al resultado de la ronda (ya persistida). Se
+    // envían en paralelo para no encadenar la latencia con varios jugadores.
+    await Promise.all(
+      pushLogros.map(({ tokens, logros }) => {
+        const cuerpo = logros.length === 1
+          ? nombreLogro(logros[0])
+          : `Desbloqueaste ${logros.length} logros nuevos`;
+        return getMessaging()
+          .sendEachForMulticast({
+            tokens,
+            notification: { title: '¡Logro desbloqueado!', body: cuerpo },
+          })
+          .catch((e) => console.error('No se pudo enviar push de logro:', e));
+      }),
+    );
 
     return { success: true };
   },

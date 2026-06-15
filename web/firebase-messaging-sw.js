@@ -1,6 +1,8 @@
 // Service worker de Firebase Cloud Messaging para la web (Fase 11b).
 // Recibe las notificaciones push cuando la pestaña está en segundo plano.
 // La config es pública (la misma de firebase_options.dart → web).
+// NOTA: la versión del SDK JS se fija aquí a mano; al actualizar los paquetes
+// firebase_* de pubspec.yaml conviene revisar que siga siendo compatible.
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
