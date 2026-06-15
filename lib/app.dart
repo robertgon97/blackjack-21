@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/push/push_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/telemetria/telemetria_provider.dart';
 import 'core/theme/tema_provider.dart';
@@ -37,6 +38,8 @@ class BlackjackApp extends ConsumerWidget {
         final tipo = perfil.isAnonymous ? 'anonimo' : 'permanente';
         t.setPropiedad('tipo_cuenta', tipo);
         t.setClave('tipo_cuenta', tipo);
+        // Inicializa el push para este usuario (idempotente; no-op en Windows).
+        ref.read(servicioPushProvider).inicializar(perfil.uid);
       }
     });
 
