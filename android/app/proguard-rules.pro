@@ -32,3 +32,19 @@
 -keepclassmembers class * {
     @androidx.annotation.Keep *;
 }
+
+# --- WorkManager + Room (firebase_messaging y google_mobile_ads lo usan) ---
+# WorkDatabase se instancia por reflexión en AppInitializer; sin estas reglas
+# R8 lo elimina y lanza StartupException en dispositivos Samsung (y otros).
+-keep class androidx.work.** { *; }
+-keepnames class androidx.work.** { *; }
+-dontwarn androidx.work.**
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep @androidx.room.Database class * { *; }
+-keepclassmembers @androidx.room.Database class * { *; }
+-dontwarn androidx.room.**
+
+# --- androidx.startup (InitializationProvider) ---
+-keep class * implements androidx.startup.Initializer { *; }
+-keepnames class * implements androidx.startup.Initializer
+-dontwarn androidx.startup.**
