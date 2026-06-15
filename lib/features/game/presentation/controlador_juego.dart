@@ -709,6 +709,8 @@ class ControladorJuego extends Notifier<EstadoJuego> {
     // verificado). El saldo llega por `saldoProvider`; pasamos a apuestas para
     // que se sincronice en cuanto se acredite (unos segundos).
     _avisar('¡Gracias! Tu recompensa llegará en unos segundos.');
-    nuevaRonda();
+    // El anuncio puede tardar 30-60 s; revalidamos que la fase no cambió antes
+    // de forzar una nueva ronda (la recompensa se acredita igual server-side).
+    if (state.fase == FaseJuego.resultado) nuevaRonda();
   }
 }

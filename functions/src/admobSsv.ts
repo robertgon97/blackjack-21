@@ -137,6 +137,10 @@ export const admobSsv = onRequest(
         res.status(503).send('user not found');
         return;
       }
+      if (resultado === 'ya-procesado') {
+        // Reintento legítimo de AdMob o replay: distinguible en Cloud Logging.
+        console.log(`admobSsv: tx ${txId} ya procesada; ignorada (idempotente)`);
+      }
       res.status(200).send('ok');
     } catch (e) {
       console.error('admobSsv error:', e);
