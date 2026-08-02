@@ -20,7 +20,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   # Fase 2: gestión de estado (UI ↔ lógica de dominio). Se usa con un Notifier
   # escrito a mano (sin codegen) para no depender de build_runner.
-  flutter_riverpod: ^2.5.1
+  flutter_riverpod: ^3.4.2
   # Fase 3: Firebase (core + auth + firestore)
   # Fase 7: BoM subido a la generación 4.x/6.x para eliminar el warning KGP
   # (firebase_analytics ≥12.2.0 ya no aplica el Kotlin Gradle Plugin).
